@@ -1,6 +1,7 @@
 import React from "react";
 import ProductCard from "@/components/ProductCard";
 import FilterBar from "@/components/FilterBar";
+import Carousel from "@/components/Carousel";
 
 const SAMPLE_PRODUCTS = [
   {
@@ -10,7 +11,6 @@ const SAMPLE_PRODUCTS = [
     oldPrice: 34990000,
     description: "Khám phá sức mạnh tối thượng cùng chip A17 Pro và thiết kế Titan đẳng cấp.",
     image: "https://cdn2.cellphones.com.vn/insecure/rs:fill:358:358/q:90/plain/https://cellphones.com.vn/media/catalog/product/i/p/iphone-15-pro-max_3.png",
-    featured: true,
   },
   {
     id: 2,
@@ -40,13 +40,17 @@ const SAMPLE_PRODUCTS = [
 export default function ProductsPage() {
   return (
     <main className="min-h-screen p-8 max-w-7xl mx-auto">
-      <header className="mb-12">
-        <h1 className="text-5xl font-black tracking-tight text-slate-900 mb-4">
-          Cửa hàng <span className="text-primary italic">Công nghệ</span>
-        </h1>
-        <p className="text-slate-500 max-w-lg">
-          Trải nghiệm mua sắm hoàn toàn mới với giao diện lấy cảm hứng từ QuizLM.
-          Tinh tế, hiện đại và tràn đầy năng lượng.
+      {/* Banner Section */}
+      <section className="mb-12">
+        <Carousel />
+      </section>
+
+      <header className="mb-8">
+        <h2 className="text-3xl font-black tracking-tight text-slate-900 mb-2">
+          Danh mục <span className="text-primary italic">Sản phẩm</span>
+        </h2>
+        <p className="text-slate-500">
+          Khám phá những công nghệ hàng đầu với ưu đãi tốt nhất.
         </p>
       </header>
 

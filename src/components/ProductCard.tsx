@@ -8,11 +8,11 @@ interface ProductCardProps {
   oldPrice?: number;
   image: string;
   description: string;
-  featured?: boolean;
 }
 
 /**
- * ProductCard component with QuizLM aesthetics (Glassmorphism & Magenta accents).
+ * Standardized ProductCard component with QuizLM aesthetics.
+ * Simplified by removing the 'featured' attribute in favor of a Carousel.
  */
 export default function ProductCard({
   name,
@@ -20,14 +20,9 @@ export default function ProductCard({
   oldPrice,
   image,
   description,
-  featured = false,
 }: ProductCardProps) {
   return (
-    <div
-      className={`group relative overflow-hidden rounded-2xl border border-white/20 bg-white/40 p-6 backdrop-blur-md transition-all duration-300 hover:bg-white/60 hover:shadow-xl ${
-        featured ? "md:col-span-2 md:row-span-2" : ""
-      }`}
-    >
+    <div className="group relative overflow-hidden rounded-2xl border border-white/20 bg-white/40 p-5 backdrop-blur-md transition-all duration-300 hover:bg-white/60 hover:shadow-xl">
       <div className="relative aspect-square overflow-hidden rounded-xl bg-accent/50">
         <img
           src={image}
@@ -42,11 +37,13 @@ export default function ProductCard({
       </div>
 
       <div className="mt-4 flex flex-col gap-2">
-        <h3 className="text-lg font-bold text-slate-900 group-hover:text-primary transition-colors">
+        <h3 className="line-clamp-1 text-lg font-bold text-slate-900 group-hover:text-primary transition-colors">
           {name}
         </h3>
-        <p className="line-clamp-2 text-sm text-slate-600">{description}</p>
-        
+        <p className="line-clamp-2 text-sm text-slate-600">
+          {description}
+        </p>
+
         <div className="mt-2 flex items-baseline gap-2">
           <span className="text-xl font-black text-primary">
             {price.toLocaleString("vi-VN")}₫
