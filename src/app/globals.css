@@ -21,3 +21,7 @@ body {
   background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
   background-size: 24px 24px;
 }
+
+button {
+  cursor: pointer;
+}

@@ -80,8 +80,7 @@ export function useProductForm(initialData?: Product) {
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     setLoading(true);
     const supabase = createClient();
     if (!supabase) {
@@ -116,14 +115,9 @@ export function useProductForm(initialData?: Product) {
         : await ProductService.createProduct(supabase, payload as any);
 
       if (error) throw error;
-      alert(
-        initialData
-          ? "Cập nhật sản phẩm thành công!"
-          : "Thêm sản phẩm thành công!"
-      );
-      router.push("/admin/products");
+      return { success: true, message: initialData ? "Cập nhật sản phẩm thành công!" : "Thêm sản phẩm thành công!" };
     } catch (err: any) {
-      alert("Lỗi: " + err.message);
+      return { success: false, message: err.message };
     } finally {
       setLoading(false);
     }

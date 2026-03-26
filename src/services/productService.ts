@@ -134,4 +134,62 @@ export const ProductService = {
 
     return { error };
   },
+
+  // --- Category Methods ---
+
+  async createCategory(supabase: SupabaseClient, category: Partial<Category>) {
+    const { data, error } = await supabase
+      .from("categories")
+      .insert([category])
+      .select()
+      .single();
+    return { data: data as Category, error };
+  },
+
+  async updateCategory(supabase: SupabaseClient, id: string, categoryData: Partial<Category>) {
+    const { data, error } = await supabase
+      .from("categories")
+      .update(categoryData)
+      .eq("id", id) // Wait, categories use 'slug' or 'id'? Let's check database types.
+      .select()
+      .single();
+    return { data: data as Category, error };
+  },
+
+  async deleteCategory(supabase: SupabaseClient, id: string) {
+    const { error } = await supabase
+      .from("categories")
+      .delete()
+      .eq("id", id);
+    return { error };
+  },
+
+  // --- Brand Methods ---
+
+  async createBrand(supabase: SupabaseClient, brand: Partial<Brand>) {
+    const { data, error } = await supabase
+      .from("brands")
+      .insert([brand])
+      .select()
+      .single();
+    return { data: data as Brand, error };
+  },
+
+  async updateBrand(supabase: SupabaseClient, id: string, brandData: Partial<Brand>) {
+    const { data, error } = await supabase
+      .from("brands")
+      .update(brandData)
+      .eq("id", id)
+      .select()
+      .single();
+    return { data: data as Brand, error };
+  },
+
+  async deleteBrand(supabase: SupabaseClient, id: string) {
+    const { error } = await supabase
+      .from("brands")
+      .delete()
+      .eq("id", id);
+    return { error };
+  },
 };

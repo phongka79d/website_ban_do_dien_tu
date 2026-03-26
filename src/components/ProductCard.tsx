@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import { Star, Heart } from "lucide-react";
 import { Product } from "@/types/database";
 import { ProductImage } from "./common/ProductImage";
@@ -30,8 +29,8 @@ export default function ProductCard({ product }: ProductCardProps) {
   const specTags = specs ? Object.entries(specs).slice(0, 3) : [];
 
   return (
-    <div className="group relative flex flex-col h-full overflow-hidden rounded-[20px] border border-slate-100 bg-white p-3 shadow-[0_4px_12px_rgba(0,0,0,0.05)] transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
-      
+    <div className="group relative flex flex-col h-full overflow-hidden rounded-[20px] border border-slate-100 bg-white p-3 shadow-[0_4px_12px_rgba(0,0,0,0.05)] transition-all duration-300 hover:shadow-xl hover:-translate-y-1 cursor-pointer">
+
       {/* Badges Overlay */}
       <div className="absolute top-0 left-0 right-0 z-10 flex justify-between p-0 pointer-events-none">
         {discount_percentage && discount_percentage > 0 ? (

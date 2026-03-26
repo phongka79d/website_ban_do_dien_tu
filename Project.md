@@ -20,18 +20,22 @@ This document describes the function of each file and its key components or func
 | Path | Description | Key Functions |
 | :--- | :--- | :--- |
 | `components/Header.tsx` | Main navigation bar. | Includes category search and user links. Hides on Admin routes. |
+| `components/Footer.tsx` | Professional site footer. | Multi-column layout with benefits and policies. Hides on Admin. |
 | `components/ProductCard.tsx` | Professional product card. | Displays price, badges, spec tags (CellphoneS style). |
 | `components/ProductList.tsx` | Product grid container. | Renders a grid of `ProductCard` components. |
 | `components/Carousel.tsx` | Banner slider. | Displays promotional images on the homepage. |
 | `components/common/ProductImage.tsx` | Unified image handler. | Centralizes Cloudinary vs External URL logic. |
+| `components/common/ConfirmationModal.tsx` | Reusable popup modal. | Premium confirmation dialog with variants (danger/info). |
 
 ### Admin Components (src/components/admin)
 | Path | Description | Key Functions |
 | :--- | :--- | :--- |
 | `components/admin/ProductForm.tsx` | Product Form UI. | Orchestrates layout. Uses `useProductForm` hook for logic. |
 | `components/admin/AdminInput.tsx` | Reusable input field. | Standardized styling for admin forms. |
-| `components/admin/AdminSelect.tsx` | Reusable dropdown. | Handles Category and Brand selection. |
-| `components/admin/AdminToggle.tsx` | Toggle switch. | Used for "0% Installment" selection. |
+| `components/admin/ProductForm.tsx` | Add/Edit product form. | Handles complex product data including specs & images. |
+| `components/admin/CategoryManager.tsx` | Category CRUD manager. | List and modify categories with name/slug/description. |
+| `components/admin/BrandManager.tsx` | Brand CRUD manager. | List and modify brands with logo support. |
+| `components/admin/AdminSidebar.tsx` | Admin navigation. | High-quality sidebar with active state tracking. |
 | `components/admin/SpecManager.tsx` | Specification editor. | Key-Value UI for technical specs (JSONB). |
 | `components/admin/ImageUpload.tsx` | Cloudinary Integration. | Handles image uploads and preview display. |
 

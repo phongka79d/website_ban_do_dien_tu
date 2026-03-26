@@ -3,87 +3,107 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  LayoutDashboard,
-  Package,
-  Settings,
-  ShoppingBag,
+import { 
+  LayoutDashboard, 
+  Package, 
+  ShoppingCart, 
+  Users, 
+  Settings, 
+  LogOut, 
   ChevronRight,
-  Tags,
-  Layers
+  Store,
+  Grid,
+  Tags
 } from "lucide-react";
 
 export function AdminSidebar() {
   const pathname = usePathname();
 
   const menuItems = [
-    {
-      label: "Tổng quan",
-      href: "/admin",
-      icon: <LayoutDashboard size={20} />,
-      isActive: pathname === "/admin"
+    { 
+      name: "Dashboard", 
+      icon: <LayoutDashboard size={20} />, 
+      href: "/admin" 
     },
-    {
-      label: "Quản lý sản phẩm",
-      href: "/admin/products",
-      icon: <Package size={20} />,
-      isActive: pathname === "/admin/products"
+    { 
+      name: "Quản lý Sản phẩm", 
+      icon: <Package size={20} />, 
+      href: "/admin/products" 
     },
-    {
-      label: "Danh mục",
-      href: "#",
-      icon: <Layers size={20} />,
-      isActive: false,
-      disabled: true
+    { 
+      name: "Danh mục", 
+      icon: <Grid size={20} />, 
+      href: "/admin/categories" 
     },
-    {
-      label: "Thương hiệu",
-      href: "#",
-      icon: <Tags size={20} />,
-      isActive: false,
-      disabled: true
+    { 
+      name: "Thương hiệu", 
+      icon: <Tags size={20} />, 
+      href: "/admin/brands" 
+    },
+    { 
+      name: "Đơn hàng", 
+      icon: <ShoppingCart size={20} />, 
+      href: "/admin/orders" 
+    },
+    { 
+      name: "Khách hàng", 
+      icon: <Users size={20} />, 
+      href: "/admin/users" 
+    },
+    { 
+      name: "Cài đặt", 
+      icon: <Settings size={20} />, 
+      href: "/admin/settings" 
     },
   ];
 
   return (
-    <aside className="w-72 bg-slate-900 text-white p-6 sticky top-0 h-screen overflow-y-auto flex flex-col shadow-2xl">
-      <div className="mb-10 px-2">
-        <Link href="/" className="text-2xl font-black italic text-primary flex items-center gap-2">
-          QuizLM <span className="text-white not-italic text-lg opacity-80 lowercase">admin</span>
-        </Link>
+    <aside className="fixed left-0 top-0 h-screen w-64 bg-white/80 backdrop-blur-md border-r border-slate-100 flex flex-col z-50">
+      <div className="p-6">
+        <div className="flex items-center gap-3 mb-10">
+          <div className="w-10 h-10 rounded-2xl bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/30">
+            <Store size={24} />
+          </div>
+          <div>
+            <h2 className="font-black text-slate-900 text-xl tracking-tight leading-none">Antigravity</h2>
+            <p className="text-[10px] font-black uppercase tracking-widest text-primary mt-1">Admin Panel</p>
+          </div>
+        </div>
+
+        <nav className="space-y-1.5">
+          {menuItems.map((item) => {
+            const isActive = pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href));
+            
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex items-center justify-between p-4 rounded-xl transition-all duration-300 group ${
+                  isActive 
+                    ? "bg-slate-50 text-primary font-bold shadow-sm" 
+                    : "text-slate-400 hover:bg-slate-50 hover:text-slate-600"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <span className={`transition-transform duration-300 ${isActive ? "scale-110" : "group-hover:scale-110"}`}>
+                    {item.icon}
+                  </span>
+                  <span className="text-[14px] leading-none">{item.name}</span>
+                </div>
+                {isActive && <ChevronRight size={16} className="opacity-50" />}
+              </Link>
+            );
+          })}
+        </nav>
       </div>
 
-      <div className="space-y-1 flex-1">
-        {menuItems.map((item, index) => (
-          <Link
-            key={index}
-            href={item.href}
-            className={`
-              flex items-center justify-between p-3.5 rounded-2xl transition-all duration-300 group
-              ${item.isActive
-                ? "bg-primary text-white shadow-lg shadow-primary/30"
-                : "text-slate-400 hover:bg-slate-800 hover:text-white"}
-              ${item.disabled ? "opacity-40 cursor-not-allowed" : ""}
-            `}
-          >
-            <div className="flex items-center gap-3">
-              <span className={`${item.isActive ? "scale-110" : "group-hover:scale-110"} transition-transform`}>
-                {item.icon}
-              </span>
-              <span className="font-bold text-[14px]">{item.label}</span>
-            </div>
-            {!item.disabled && <ChevronRight size={14} className={`opacity-0 group-hover:opacity-100 transition-opacity ${item.isActive ? "opacity-100" : ""}`} />}
-          </Link>
-        ))}
-      </div>
-
-      <div className="mt-auto pt-6 border-t border-slate-800">
-        <Link
+      <div className="mt-auto p-6 border-t border-slate-50">
+        <Link 
           href="/"
-          className="flex items-center gap-3 p-4 rounded-2xl bg-slate-800/50 text-slate-300 hover:bg-slate-800 hover:text-white transition-all font-bold text-sm"
+          className="flex items-center gap-3 p-4 rounded-xl text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all duration-300 group"
         >
-          <ShoppingBag size={20} />
-          Xem cửa hàng
+          <LogOut size={20} className="transition-transform group-hover:-translate-x-1" />
+          <span className="text-[14px] font-bold">Quay lại Shop</span>
         </Link>
       </div>
     </aside>
