@@ -82,5 +82,28 @@ export const ProductService = {
     }
 
     return data || [];
+  },
+
+  /**
+   * Creates a new product in the database.
+   * @param {Partial<Product>} product - The product data to insert.
+   * @returns {Promise<{ data: Product | null, error: any }>} Result of the insertion.
+   */
+  async createProduct(product: Partial<Product>): Promise<{ data: Product | null, error: any }> {
+    const supabase = await createClient();
+    
+    if (!supabase) return { data: null, error: "Supabase client not initialized" };
+
+    const { data, error } = await supabase
+      .from("products")
+      .insert([product])
+      .select()
+      .single();
+
+    if (error) {
+       console.error("Supabase Error [createProduct]:", error.message);
+    }
+
+    return { data: data as any, error };
   }
 };
