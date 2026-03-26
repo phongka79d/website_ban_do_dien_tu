@@ -1,20 +1,15 @@
-import { createClient } from "@/utils/supabase/server";
-import { Product, ProductWithDetails, Category } from "@/types/database";
+import { Product, ProductWithDetails, Category, Brand } from "@/types/database";
+import { SupabaseClient } from "@supabase/supabase-js";
 
 /**
- * ProductService - Handles data fetching for products using Supabase.
- * Follows SOLID principles and provides clean interfaces for components.
+ * ProductService - Handles data fetching for products.
+ * Requires a Supabase client to be passed in, making it universal for Server/Client components.
  */
 export const ProductService = {
   /**
    * Fetches a list of products with their brand and category information.
-   * @returns {Promise<ProductWithDetails[]>} List of products.
    */
-  async getProducts(): Promise<ProductWithDetails[]> {
-    const supabase = await createClient();
-    
-    if (!supabase) return [];
-
+  async getProducts(supabase: SupabaseClient): Promise<ProductWithDetails[]> {
     const { data, error } = await supabase
       .from("products")
       .select(`
@@ -29,20 +24,13 @@ export const ProductService = {
       return [];
     }
 
-    console.log("Supabase Data [getProducts]:", data?.length, "products found");
-    return (data as any) || [];
+    return (data as ProductWithDetails[]) || [];
   },
 
   /**
-   * Fetches a single product by its ID with all associated images.
-   * @param {string} id - The UUID of the product.
-   * @returns {Promise<Product | null>} The product details or null.
+   * Fetches a single product by its ID.
    */
-  async getProductById(id: string): Promise<Product | null> {
-    const supabase = await createClient();
-    
-    if (!supabase) return null;
-
+  async getProductById(supabase: SupabaseClient, id: string): Promise<Product | null> {
     const { data, error } = await supabase
       .from("products")
       .select(`
@@ -59,18 +47,13 @@ export const ProductService = {
       return null;
     }
 
-    return data as any;
+    return data as Product;
   },
 
   /**
    * Fetches all product categories.
-   * @returns {Promise<Category[]>} List of categories.
    */
-  async getCategories(): Promise<Category[]> {
-    const supabase = await createClient();
-    
-    if (!supabase) return [];
-
+  async getCategories(supabase: SupabaseClient): Promise<Category[]> {
     const { data, error } = await supabase
       .from("categories")
       .select("*")
@@ -85,15 +68,26 @@ export const ProductService = {
   },
 
   /**
-   * Creates a new product in the database.
-   * @param {Partial<Product>} product - The product data to insert.
-   * @returns {Promise<{ data: Product | null, error: any }>} Result of the insertion.
+   * Fetches all brands.
    */
-  async createProduct(product: Partial<Product>): Promise<{ data: Product | null, error: any }> {
-    const supabase = await createClient();
-    
-    if (!supabase) return { data: null, error: "Supabase client not initialized" };
+  async getBrands(supabase: SupabaseClient): Promise<Brand[]> {
+    const { data, error } = await supabase
+      .from("brands")
+      .select("*")
+      .order("name");
 
+    if (error) {
+      console.error("Error fetching brands:", error);
+      return [];
+    }
+
+    return data || [];
+  },
+
+  /**
+   * Creates a new product.
+   */
+  async createProduct(supabase: SupabaseClient, product: Partial<Product>): Promise<{ data: Product | null, error: any }> {
     const { data, error } = await supabase
       .from("products")
       .insert([product])
@@ -104,6 +98,40 @@ export const ProductService = {
        console.error("Supabase Error [createProduct]:", error.message);
     }
 
-    return { data: data as any, error };
-  }
+    return { data: data as Product, error };
+  },
+
+  /**
+   * Updates an existing product.
+   */
+  async updateProduct(supabase: SupabaseClient, id: string, productData: Partial<Product>) {
+    const { data, error } = await supabase
+      .from("products")
+      .update(productData)
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Supabase Error [updateProduct]:", error.message);
+    }
+
+    return { data: data as Product, error };
+  },
+
+  /**
+   * Deletes a product.
+   */
+  async deleteProduct(supabase: SupabaseClient, id: string) {
+    const { error } = await supabase
+      .from("products")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      console.error("Supabase Error [deleteProduct]:", error.message);
+    }
+
+    return { error };
+  },
 };

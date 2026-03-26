@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { usePathname } from "next/navigation";
 import { 
   Search, 
   MapPin, 
@@ -14,6 +15,13 @@ import {
  * Header component inspired by Cellphones.com.vn with QuizLM aesthetics.
  */
 export default function Header() {
+  const pathname = usePathname();
+  
+  // Hide header on admin pages
+  if (pathname?.startsWith("/admin")) {
+    return null;
+  }
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-white/20 bg-white/70 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 md:px-8">

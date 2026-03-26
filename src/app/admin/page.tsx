@@ -1,8 +1,12 @@
 import React from "react";
 import { ProductService } from "@/services/productService";
+import { createClient } from "@/utils/supabase/server";
 
 export default async function AdminDashboard() {
-  const products = await ProductService.getProducts();
+  const supabase = await createClient();
+  if (!supabase) return null;
+
+  const products = await ProductService.getProducts(supabase);
 
   return (
     <div className="space-y-8">
