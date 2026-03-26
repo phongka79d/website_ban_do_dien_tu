@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { CldImage } from "next-cloudinary";
 
 interface ProductCardProps {
   name: string;
@@ -21,14 +22,28 @@ export default function ProductCard({
   image,
   description,
 }: ProductCardProps) {
+  const isCloudinary = image && !image.startsWith("http");
+
   return (
     <div className="group relative overflow-hidden rounded-2xl border border-white/20 bg-white/40 p-5 backdrop-blur-md transition-all duration-300 hover:bg-white/60 hover:shadow-xl">
       <div className="relative aspect-square overflow-hidden rounded-xl bg-accent/50">
-        <img
-          src={image}
-          alt={name}
-          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-        />
+        {isCloudinary ? (
+          <CldImage
+            src={image}
+            alt={name}
+            width={400}
+            height={400}
+            crop="fill"
+            gravity="auto"
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+          />
+        ) : (
+          <img
+            src={image}
+            alt={name}
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+          />
+        )}
         {oldPrice && (
           <div className="absolute top-2 left-2 rounded-full bg-primary px-3 py-1 text-xs font-bold text-white">
             -{Math.round(((oldPrice - price) / oldPrice) * 100)}%

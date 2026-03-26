@@ -2,42 +2,12 @@ import React from "react";
 import ProductCard from "@/components/ProductCard";
 import FilterBar from "@/components/FilterBar";
 import Carousel from "@/components/Carousel";
+import { ProductService } from "@/services/productService";
 
-const SAMPLE_PRODUCTS = [
-  {
-    id: 1,
-    name: "iPhone 15 Pro Max",
-    price: 29990000,
-    oldPrice: 34990000,
-    description: "Khám phá sức mạnh tối thượng cùng chip A17 Pro và thiết kế Titan đẳng cấp.",
-    image: "https://cdn2.cellphones.com.vn/insecure/rs:fill:358:358/q:90/plain/https://cellphones.com.vn/media/catalog/product/i/p/iphone-15-pro-max_3.png",
-  },
-  {
-    id: 2,
-    name: "Samsung Galaxy S24 Ultra",
-    price: 26990000,
-    oldPrice: 29990000,
-    description: "Quyền năng AI trong tầm tay. Chụp ảnh đêm siêu sắc nét.",
-    image: "https://cdn2.cellphones.com.vn/insecure/rs:fill:358:358/q:90/plain/https://cellphones.com.vn/media/catalog/product/s/s/ss-s24-ultra-xam-2_1.png",
-  },
-  {
-    id: 3,
-    name: "MacBook Air M3",
-    price: 27990000,
-    description: "Mỏng nhẹ kinh ngạc. Hiệu năng vượt thời gian cùng chip M3 mới nhất.",
-    image: "https://cdn2.cellphones.com.vn/insecure/rs:fill:358:358/q:90/plain/https://cellphones.com.vn/media/catalog/product/m/a/macbook-air-m3-13-inch-silver.png",
-  },
-  {
-    id: 4,
-    name: "Sony WH-1000XM5",
-    price: 6490000,
-    oldPrice: 8490000,
-    description: "Chống ồn hàng đầu thế giới. Trải nghiệm âm thanh đỉnh cao.",
-    image: "https://cdn2.cellphones.com.vn/insecure/rs:fill:358:358/q:90/plain/https://cellphones.com.vn/media/catalog/product/t/a/tai-nghe-chong-on-sony-wh-1000xm5.png",
-  },
-];
+export default async function ProductsPage() {
+  const products = await ProductService.getProducts();
+  console.log("Products in Page:", JSON.stringify(products, null, 2));
 
-export default function ProductsPage() {
   return (
     <main className="min-h-screen p-8 max-w-7xl mx-auto">
       {/* Banner Section */}
@@ -56,10 +26,23 @@ export default function ProductsPage() {
 
       <FilterBar />
 
-      <section className="mt-8 grid grid-cols-1 md:grid-cols-4 gap-6">
-        {SAMPLE_PRODUCTS.map((product) => (
-          <ProductCard key={product.id} {...product} />
-        ))}
+      <section className="mt-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+        {products.length > 0 ? (
+          products.map((product) => (
+            <ProductCard 
+              key={product.id} 
+              name={product.name}
+              price={product.price}
+              oldPrice={product.original_price ?? undefined}
+              image={product.image_url || ""}
+              description={product.promotion_text || ""}
+            />
+          ))
+        ) : (
+          <div className="col-span-full py-20 text-center">
+            <p className="text-slate-400">Chưa có sản phẩm nào trong cửa hàng.</p>
+          </div>
+        )}
       </section>
       
       <div className="mt-12 flex justify-center">
