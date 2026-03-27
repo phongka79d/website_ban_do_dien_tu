@@ -19,6 +19,9 @@ export const metadata: Metadata = {
   description: "Trải nghiệm mua sắm công nghệ hiện đại phong cách QuizLM",
 };
 
+import ServiceWorkerManager from "@/components/ServiceWorkerManager";
+import { Suspense } from "react";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -30,7 +33,10 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-slate-50">
-        {children}
+        <ServiceWorkerManager />
+        <Suspense fallback={null}>
+          {children}
+        </Suspense>
       </body>
     </html>
   );

@@ -1,115 +1,142 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
-import useEmblaCarousel from "embla-carousel-react";
-import Autoplay from "embla-carousel-autoplay";
+import React, { useEffect, useRef, useState, Suspense } from "react";
+import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Banner } from "@/types/database";
-import Link from "next/link";
+
+const AUTOPLAY_DELAY = 5000;
 
 interface CarouselProps {
   banners: Banner[];
 }
 
+/**
+ * ARCHITECTURAL CAROUSEL (Attempt 4.22)
+ * - Optimized for Next.js 16 Activity/Keep-Alive with Suspense.
+ * - Disables prefetching (prefetch={false}) to avoid router initialization loops.
+ * - Uses native scroll-snap for maximum durability during restoration.
+ */
 export default function Carousel({ banners }: CarouselProps) {
-  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true }, [
-    Autoplay({ delay: 5000, stopOnInteraction: false, stopOnMouseEnter: true }),
-  ]);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const totalBanners = banners.length;
 
-  const scrollPrev = useCallback(() => emblaApi && emblaApi.scrollPrev(), [emblaApi]);
-  const scrollNext = useCallback(() => emblaApi && emblaApi.scrollNext(), [emblaApi]);
-  const scrollTo = useCallback((index: number) => emblaApi && emblaApi.scrollTo(index), [emblaApi]);
+  const handleScroll = () => {
+    const container = containerRef.current;
+    if (!container) return;
+    const slideWidth = container.offsetWidth;
+    if (slideWidth === 0) return;
+    const newIndex = Math.round(container.scrollLeft / slideWidth);
+    if (newIndex !== selectedIndex) {
+      setSelectedIndex(newIndex);
+    }
+  };
 
-  const onSelect = useCallback(() => {
-    if (!emblaApi) return;
-    setSelectedIndex(emblaApi.selectedScrollSnap());
-  }, [emblaApi]);
+  const scrollTo = (index: number) => {
+    const container = containerRef.current;
+    if (!container) return;
+    const normalizedIndex = (index + totalBanners) % totalBanners;
+    const slideWidth = container.offsetWidth;
+    container.scrollTo({ left: slideWidth * normalizedIndex, behavior: "smooth" });
+  };
 
   useEffect(() => {
-    if (!emblaApi) return;
-    onSelect();
-    emblaApi.on("select", onSelect);
-    emblaApi.on("reInit", onSelect);
-  }, [emblaApi, onSelect]);
+    if (totalBanners <= 1 || isPaused) return;
+
+    const timer = setInterval(() => {
+        const container = containerRef.current;
+        if (container && container.offsetParent !== null) {
+            const slideWidth = container.offsetWidth;
+            const currentIndex = Math.round(container.scrollLeft / slideWidth);
+            const nextIndex = (currentIndex + 1) % totalBanners;
+            container.scrollTo({ left: slideWidth * nextIndex, behavior: "smooth" });
+        }
+    }, AUTOPLAY_DELAY);
+
+    return () => clearInterval(timer);
+  }, [totalBanners, isPaused]);
 
   if (banners.length === 0) return null;
 
   return (
-    <div
+    <div 
       className="group flex flex-col gap-4 w-full"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
-      <div className="relative w-full overflow-hidden rounded-[40px] shadow-2xl">
-        {/* Main Carousel */}
-        <div className="overflow-hidden" ref={emblaRef}>
-          <div className="flex">
-            {banners.map((banner) => (
-              <div
-                key={banner.id}
-                className={`relative min-w-full h-[380px] md:h-[420px] overflow-hidden ${banner.bg_color || "bg-[#1a237e]"}`}
-              >
-                <div className="relative z-10 flex h-full flex-col md:flex-row">
-                  {/* Left Side: Content */}
-                  <div className="flex h-full w-full flex-col justify-center px-8 md:w-1/2 md:pl-20 md:pr-10 lg:pl-32">
-                    <h2 className="text-4xl font-extrabold tracking-tight text-white md:text-5xl lg:text-6xl">
-                      {banner.title.split(' ').map((word, i) => (
-                        <span key={i} className="block">{word}</span>
-                      ))}
-                    </h2>
-                    <p className="mt-4 text-base font-medium text-white/80 md:text-lg">
-                      {banner.subtitle}
-                    </p>
-                    {banner.target_url && (
-                      <div className="mt-8">
-                        <Link
-                          href={banner.target_url}
-                          className="inline-flex items-center rounded-full bg-white px-10 py-4 text-lg font-bold text-[#1a237e] transition-all hover:scale-105 hover:shadow-xl active:scale-95"
-                        >
-                          Xem chi tiết
-                        </Link>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Right Side: Image */}
-                  <div className="relative flex h-full w-full items-center justify-center p-8 md:w-1/2">
-                    <div className="relative h-64 w-64 transform transition-transform duration-1000 group-hover:scale-105 md:h-[320px] md:w-[320px]">
-                      <img
-                        src={banner.image_url}
-                        alt={banner.title}
-                        className="h-full w-full object-contain filter drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)]"
-                      />
+      <div className="relative w-full overflow-hidden rounded-[30px] md:rounded-[40px] shadow-2xl">
+        <div
+          ref={containerRef}
+          onScroll={handleScroll}
+          className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar touch-pan-x"
+          style={{ scrollBehavior: "auto" }}
+        >
+          {banners.map((banner) => (
+            <div
+              key={banner.id}
+              className={`relative min-w-full h-[520px] md:h-[420px] overflow-hidden snap-start ${banner.bg_color || "bg-[#1a237e]"}`}
+            >
+              <div className="relative z-10 flex h-full flex-col md:flex-row">
+                {/* Content Side (Left) - Balanced spacing */}
+                <div className="flex h-[45%] md:h-full w-full flex-col justify-center px-8 md:px-12 md:w-1/2 lg:pl-24">
+                  <h2 className="text-xl md:text-3xl lg:text-4xl font-extrabold tracking-tight text-white leading-[1.2]">
+                    {banner.title}
+                  </h2>
+                  <p className="mt-3 text-[10px] md:text-sm font-medium text-white/60 max-w-[240px] md:max-w-md">
+                    {banner.subtitle}
+                  </p>
+                  
+                  {banner.target_url && (
+                    <div className="mt-6 md:mt-8">
+                      <Link
+                        href={banner.target_url}
+                        prefetch={false}
+                        className="group/btn inline-flex items-center gap-2 rounded-xl bg-white/10 backdrop-blur-xl border border-white/20 px-5 md:px-7 py-2.5 md:py-3.5 text-xs md:text-sm font-bold text-white transition-all hover:bg-white/20 hover:border-white/30 active:scale-95"
+                      >
+                        <span>Xem chi tiết</span>
+                        <ChevronRight size={16} className="transition-transform group-hover/btn:translate-x-1" />
+                      </Link>
                     </div>
+                  )}
+                </div>
+
+                {/* Image Side (Right) - Occupies full half and FILLED as requested */}
+                <div className="relative flex h-[55%] md:h-full w-full md:w-1/2 bg-black/20 overflow-hidden">
+                  <div className="relative h-full w-full">
+                    <img
+                      src={banner.image_url}
+                      alt={banner.title}
+                      className="h-full w-full object-cover filter drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)] transform scale-100 group-hover:scale-110 transition-transform duration-1000"
+                    />
+                    {/* Subtle Overlay to blend with text side if needed */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-black/20 to-transparent pointer-events-none" />
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
 
-        {/* Navigation Buttons */}
         {banners.length > 1 && (
           <>
             <button
-              onClick={scrollPrev}
-              className="absolute left-6 top-1/2 z-30 -translate-y-1/2 rounded-full bg-white/10 backdrop-blur-md p-3 text-white opacity-0 transition-all hover:bg-white/20 active:scale-90 group-hover:opacity-100"
+              onClick={() => scrollTo(selectedIndex - 1)}
+              className="absolute left-6 top-1/2 z-30 hidden md:flex -translate-y-1/2 rounded-full bg-white/5 backdrop-blur-md border border-white/10 p-3 text-white opacity-0 transition-all hover:bg-white/20 active:scale-90 group-hover:opacity-100"
             >
-              <ChevronLeft size={24} strokeWidth={3} />
+              <ChevronLeft size={24} strokeWidth={2.5} />
             </button>
             <button
-              onClick={scrollNext}
-              className="absolute right-6 top-1/2 z-30 -translate-y-1/2 rounded-full bg-white/10 backdrop-blur-md p-3 text-white opacity-0 transition-all hover:bg-white/20 active:scale-90 group-hover:opacity-100"
+              onClick={() => scrollTo(selectedIndex + 1)}
+              className="absolute right-6 top-1/2 z-30 hidden md:flex -translate-y-1/2 rounded-full bg-white/5 backdrop-blur-md border border-white/10 p-3 text-white opacity-0 transition-all hover:bg-white/20 active:scale-90 group-hover:opacity-100"
             >
-              <ChevronRight size={24} strokeWidth={3} />
+              <ChevronRight size={24} strokeWidth={2.5} />
             </button>
           </>
         )}
       </div>
 
-      {/* Tabs & Progress Bars (CellphoneS Style) */}
       {banners.length > 1 && (
         <div className="flex w-full overflow-x-auto no-scrollbar gap-2 px-2 pb-2">
           {banners.map((banner, i) => (
@@ -126,11 +153,10 @@ export default function Carousel({ banners }: CarouselProps) {
                 {banner.title.length > 15 ? banner.title.substring(0, 15) + "..." : banner.title}
               </span>
 
-              {/* Progress Bar Container */}
               <div className="absolute bottom-0 left-0 w-full h-[3px] bg-slate-200">
                 {selectedIndex === i && (
                   <div
-                    key={selectedIndex}
+                    key={`progress-${selectedIndex}`}
                     className={`h-full bg-red-600 animate-progress ${isPaused ? "pause-animation" : ""}`}
                   />
                 )}
