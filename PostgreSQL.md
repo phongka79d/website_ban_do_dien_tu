@@ -58,7 +58,22 @@ CREATE INDEX idx_products_specs ON products USING GIN (specs);
 CREATE INDEX idx_products_price ON products(price);
 CREATE INDEX idx_product_images_product_id ON product_images(product_id);
 
--- 6. Sample Data Insertion
+-- 6. Create Banners Table (for Carousel)
+CREATE TABLE banners (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    title VARCHAR(255) NOT NULL,
+    subtitle TEXT,
+    image_url TEXT NOT NULL,
+    bg_color VARCHAR(100) DEFAULT 'bg-gradient-to-r from-slate-900 to-slate-800',
+    target_url TEXT,
+    is_active BOOLEAN DEFAULT true,
+    display_order INT DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_banners_active_order ON banners(is_active, display_order);
+
+-- 7. Sample Data Insertion
 
 -- Brands
 INSERT INTO brands (name) VALUES 
@@ -92,4 +107,31 @@ VALUES
     'https://example.com/logitech-gpro.png',
     '{"weight": "63g", "sensor": "HERO 25K", "max_dpi": 25600}',
     4.9, 156, 'Voucher 200k for gaming gear', false
+);
+
+-- Banners
+INSERT INTO banners (title, subtitle, image_url, bg_color, target_url, display_order) VALUES 
+(
+    'iPhone 15 Pro Max', 
+    'Titanium siêu bền. Chip A17 Pro đỉnh cao.', 
+    'https://cdn2.cellphones.com.vn/insecure/rs:fill:690:300/q:90/plain/https://cellphones.com.vn/media/catalog/product/i/p/iphone-15-pro-max_3.png',
+    'bg-gradient-to-r from-slate-900 to-slate-800',
+    '/product/iphone-15-pro-max',
+    1
+),
+(
+    'Galaxy S24 Series', 
+    'Quyền năng AI. Ưu đãi đến 10 triệu đồng.', 
+    'https://cdn2.cellphones.com.vn/insecure/rs:fill:690:300/q:90/plain/https://cellphones.com.vn/media/catalog/product/s/s/ss-s24-ultra-xam-2_1.png',
+    'bg-gradient-to-r from-indigo-900 to-blue-900',
+    '/category/samsung',
+    2
+),
+(
+    'Mở bán MacBook M3', 
+    'Hiệu năng bứt phá. Trẻ trung sáng tạo.', 
+    'https://cdn2.cellphones.com.vn/insecure/rs:fill:690:300/q:90/plain/https://cellphones.com.vn/media/catalog/product/m/a/macbook-air-m3-13-inch-silver.png',
+    'bg-gradient-to-r from-secondary/80 to-primary/80',
+    '/category/macbook',
+    3
 );

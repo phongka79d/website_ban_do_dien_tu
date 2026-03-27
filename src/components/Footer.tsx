@@ -115,9 +115,9 @@ export default function Footer() {
             <div>
               <h4 className="text-slate-900 font-black uppercase text-xs tracking-widest mb-6">Phương thức thanh toán</h4>
               <div className="flex flex-wrap gap-2">
-                <PaymentBadge src="https://logolook.net/wp-content/uploads/2023/09/Visa-Logo.png" />
-                <PaymentBadge src="https://static.vecstock.com/i/preview-1440/31/671/mastercard-bank-card-logo-isolated-vector-on-white-background-preview.jpg" />
-                <PaymentBadge src="https://developers.momo.vn/v3/vi/assets/images/logo-custom-2e612c20205c743c0fce10ca244439c1.png" />
+                <PaymentBadge src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Visa_Inc._logo.svg/2560px-Visa_Inc._logo.svg.png" />
+                <PaymentBadge src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" />
+                <PaymentBadge src="https://upload.wikimedia.org/wikipedia/vi/f/fe/MoMo_Logo.png" />
               </div>
             </div>
           </div>

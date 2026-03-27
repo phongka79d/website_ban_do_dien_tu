@@ -25,3 +25,25 @@ body {
 button {
   cursor: pointer;
 }
+
+@keyframes progress {
+  from { width: 0%; }
+  to { width: 100%; }
+}
+
+.animate-progress {
+  animation: progress 5s linear forwards;
+}
+
+.pause-animation {
+  animation-play-state: paused !important;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

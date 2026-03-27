@@ -3,19 +3,24 @@ import FilterBar from "@/components/FilterBar";
 import Carousel from "@/components/Carousel";
 import { ProductService } from "@/services/productService";
 import { createClient } from "@/utils/supabase/server";
+import { BannerService } from "@/services/bannerService";
 
 export default async function Home() {
   const supabase = await createClient();
   if (!supabase) return null;
 
-  const products = await ProductService.getProducts(supabase);
-  console.log("Products in Page:", JSON.stringify(products, null, 2));
+  const [products, banners] = await Promise.all([
+    ProductService.getProducts(supabase),
+    BannerService.getBanners(supabase)
+  ]);
+
+  console.log("Products in Page:", products.length);
 
   return (
     <main className="min-h-screen p-8 max-w-7xl mx-auto">
       {/* Banner Section */}
       <section className="mb-12">
-        <Carousel />
+        <Carousel key={`carousel-${banners[0]?.id || "static"}`} banners={banners} />
       </section>
 
       <header className="mb-8">

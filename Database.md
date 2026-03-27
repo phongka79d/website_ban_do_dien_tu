@@ -56,6 +56,20 @@ Supports multiple images/slides for each product.
 | `is_primary` | BOOLEAN | Set to true for main image |
 | `display_order` | INT | Sorting order for galleries |
 
+### 2.5 `banners`
+Stores items for the homepage carousel/slider.
+| Column | Type | Description |
+| :--- | :--- | :--- |
+| `id` | UUID (PK) | Unique identifier |
+| `title` | VARCHAR(255) | Main headline text |
+| `subtitle` | TEXT | Description/Sub-text |
+| `image_url` | TEXT | Image URL for the banner |
+| `bg_color` | VARCHAR(100) | Background color or gradient class |
+| `target_url` | TEXT | Navigation link when clicked |
+| `is_active` | BOOLEAN | Toggle visibility |
+| `display_order` | INT | Sorting priority |
+| `created_at` | TIMESTAMPTZ | Creation timestamp |
+
 ## 3. JSONB Specification Examples
 The `specs` column allows for category-specific data without schema changes.
 

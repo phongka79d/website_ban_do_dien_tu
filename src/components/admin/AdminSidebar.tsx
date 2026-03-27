@@ -13,7 +13,8 @@ import {
   ChevronRight,
   Store,
   Grid,
-  Tags
+  Tags,
+  Image as ImageIcon
 } from "lucide-react";
 
 export function AdminSidebar() {
@@ -39,6 +40,11 @@ export function AdminSidebar() {
       name: "Thương hiệu", 
       icon: <Tags size={20} />, 
       href: "/admin/brands" 
+    },
+    { 
+      name: "Banner Carousel", 
+      icon: <ImageIcon size={20} />, 
+      href: "/admin/banners" 
     },
     { 
       name: "Đơn hàng", 

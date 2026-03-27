@@ -1,113 +1,144 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
+import useEmblaCarousel from "embla-carousel-react";
+import Autoplay from "embla-carousel-autoplay";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Banner } from "@/types/database";
+import Link from "next/link";
 
-interface BannerItem {
-  id: number;
-  title: string;
-  subtitle: string;
-  image: string;
-  color: string;
+interface CarouselProps {
+  banners: Banner[];
 }
 
-const BANNERS: BannerItem[] = [
-  {
-    id: 1,
-    title: "iPhone 15 Pro Max",
-    subtitle: "Titanium siêu bền. Chip A17 Pro đỉnh cao.",
-    image: "https://cdn2.cellphones.com.vn/insecure/rs:fill:690:300/q:90/plain/https://cellphones.com.vn/media/catalog/product/i/p/iphone-15-pro-max_3.png",
-    color: "bg-gradient-to-r from-slate-900 to-slate-800",
-  },
-  {
-    id: 2,
-    title: "Galaxy S24 Series",
-    subtitle: "Quyền năng AI. Ưu đãi đến 10 triệu đồng.",
-    image: "https://cdn2.cellphones.com.vn/insecure/rs:fill:690:300/q:90/plain/https://cellphones.com.vn/media/catalog/product/s/s/ss-s24-ultra-xam-2_1.png",
-    color: "bg-gradient-to-r from-indigo-900 to-blue-900",
-  },
-  {
-    id: 3,
-    title: "Mở bán MacBook M3",
-    subtitle: "Hiệu năng bứt phá. Trẻ trung sáng tạo.",
-    image: "https://cdn2.cellphones.com.vn/insecure/rs:fill:690:300/q:90/plain/https://cellphones.com.vn/media/catalog/product/m/a/macbook-air-m3-13-inch-silver.png",
-    color: "bg-gradient-to-r from-secondary/80 to-primary/80",
-  },
-];
+export default function Carousel({ banners }: CarouselProps) {
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true }, [
+    Autoplay({ delay: 5000, stopOnInteraction: false, stopOnMouseEnter: true }),
+  ]);
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
 
-export default function Carousel() {
-  const [current, setCurrent] = useState(0);
+  const scrollPrev = useCallback(() => emblaApi && emblaApi.scrollPrev(), [emblaApi]);
+  const scrollNext = useCallback(() => emblaApi && emblaApi.scrollNext(), [emblaApi]);
+  const scrollTo = useCallback((index: number) => emblaApi && emblaApi.scrollTo(index), [emblaApi]);
 
-  const next = () => setCurrent((curr) => (curr === BANNERS.length - 1 ? 0 : curr + 1));
-  const prev = () => setCurrent((curr) => (curr === 0 ? BANNERS.length - 1 : curr - 1));
+  const onSelect = useCallback(() => {
+    if (!emblaApi) return;
+    setSelectedIndex(emblaApi.selectedScrollSnap());
+  }, [emblaApi]);
 
   useEffect(() => {
-    const timer = setInterval(next, 5000);
-    return () => clearInterval(timer);
-  }, [current]);
+    if (!emblaApi) return;
+    onSelect();
+    emblaApi.on("select", onSelect);
+    emblaApi.on("reInit", onSelect);
+  }, [emblaApi, onSelect]);
+
+  if (banners.length === 0) return null;
 
   return (
-    <div className="group relative w-full overflow-hidden rounded-3xl border border-white/20 shadow-2xl">
-      <div 
-        className="flex transition-transform duration-700 ease-in-out"
-        style={{ transform: `translateX(-${current * 100}%)` }}
-      >
-        {BANNERS.map((banner) => (
-          <div 
-            key={banner.id} 
-            className={`relative min-w-full h-80 md:h-[400px] flex items-center px-12 md:px-24 ${banner.color}`}
-          >
-            {/* Content */}
-            <div className="z-10 w-full md:w-1/2 space-y-4">
-              <h2 className="text-4xl md:text-6xl font-black text-white leading-tight">
-                {banner.title}
-              </h2>
-              <p className="text-lg text-white/80 font-medium">
-                {banner.subtitle}
-              </p>
-              <button className="mt-6 rounded-full bg-white px-8 py-3 font-bold text-slate-900 transition-all hover:scale-105 active:scale-95 shadow-lg">
-                Xem chi tiết
-              </button>
-            </div>
+    <div
+      className="group flex flex-col gap-4 w-full"
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+    >
+      <div className="relative w-full overflow-hidden rounded-[40px] shadow-2xl">
+        {/* Main Carousel */}
+        <div className="overflow-hidden" ref={emblaRef}>
+          <div className="flex">
+            {banners.map((banner) => (
+              <div
+                key={banner.id}
+                className={`relative min-w-full h-[380px] md:h-[420px] overflow-hidden ${banner.bg_color || "bg-[#1a237e]"}`}
+              >
+                <div className="relative z-10 flex h-full flex-col md:flex-row">
+                  {/* Left Side: Content */}
+                  <div className="flex h-full w-full flex-col justify-center px-8 md:w-1/2 md:pl-20 md:pr-10 lg:pl-32">
+                    <h2 className="text-4xl font-extrabold tracking-tight text-white md:text-5xl lg:text-6xl">
+                      {banner.title.split(' ').map((word, i) => (
+                        <span key={i} className="block">{word}</span>
+                      ))}
+                    </h2>
+                    <p className="mt-4 text-base font-medium text-white/80 md:text-lg">
+                      {banner.subtitle}
+                    </p>
+                    {banner.target_url && (
+                      <div className="mt-8">
+                        <Link
+                          href={banner.target_url}
+                          className="inline-flex items-center rounded-full bg-white px-10 py-4 text-lg font-bold text-[#1a237e] transition-all hover:scale-105 hover:shadow-xl active:scale-95"
+                        >
+                          Xem chi tiết
+                        </Link>
+                      </div>
+                    )}
+                  </div>
 
-            {/* Image (Right Side) */}
-            <div className="absolute right-0 top-0 h-full w-full md:w-1/2 flex items-center justify-end p-8 md:p-12">
-               <div className="relative h-64 w-64 md:h-80 md:w-80 transition-transform duration-700 hover:scale-110">
-                  <img src={banner.image} alt={banner.title} className="h-full w-full object-contain filter drop-shadow-2xl" />
-                  {/* Decorative Glow */}
-                  <div className="absolute inset-0 bg-primary/20 blur-3xl -z-10 rounded-full"></div>
-               </div>
-            </div>
+                  {/* Right Side: Image */}
+                  <div className="relative flex h-full w-full items-center justify-center p-8 md:w-1/2">
+                    <div className="relative h-64 w-64 transform transition-transform duration-1000 group-hover:scale-105 md:h-[320px] md:w-[320px]">
+                      <img
+                        src={banner.image_url}
+                        alt={banner.title}
+                        className="h-full w-full object-contain filter drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)]"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
+        </div>
+
+        {/* Navigation Buttons */}
+        {banners.length > 1 && (
+          <>
+            <button
+              onClick={scrollPrev}
+              className="absolute left-6 top-1/2 z-30 -translate-y-1/2 rounded-full bg-white/10 backdrop-blur-md p-3 text-white opacity-0 transition-all hover:bg-white/20 active:scale-90 group-hover:opacity-100"
+            >
+              <ChevronLeft size={24} strokeWidth={3} />
+            </button>
+            <button
+              onClick={scrollNext}
+              className="absolute right-6 top-1/2 z-30 -translate-y-1/2 rounded-full bg-white/10 backdrop-blur-md p-3 text-white opacity-0 transition-all hover:bg-white/20 active:scale-90 group-hover:opacity-100"
+            >
+              <ChevronRight size={24} strokeWidth={3} />
+            </button>
+          </>
+        )}
       </div>
 
-      {/* Navigation Buttons */}
-      <button 
-        onClick={prev}
-        className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-white/10 backdrop-blur-md p-2 text-white opacity-0 transition-all hover:bg-white/20 group-hover:opacity-100"
-      >
-        <ChevronLeft size={32} />
-      </button>
-      <button 
-        onClick={next}
-        className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-white/10 backdrop-blur-md p-2 text-white opacity-0 transition-all hover:bg-white/20 group-hover:opacity-100"
-      >
-        <ChevronRight size={32} />
-      </button>
+      {/* Tabs & Progress Bars (CellphoneS Style) */}
+      {banners.length > 1 && (
+        <div className="flex w-full overflow-x-auto no-scrollbar gap-2 px-2 pb-2">
+          {banners.map((banner, i) => (
+            <button
+              key={banner.id}
+              onClick={() => scrollTo(i)}
+              className={`relative flex-1 min-w-[120px] px-4 py-3 rounded-xl transition-all ${selectedIndex === i
+                  ? "bg-white/5 shadow-[0_4px_12px_rgba(0,0,0,0.1)]"
+                  : "hover:bg-white/5 opacity-60"
+                }`}
+            >
+              <span className={`text-xs font-bold whitespace-nowrap uppercase tracking-wider ${selectedIndex === i ? "text-[#1a237e]" : "text-slate-500"
+                }`}>
+                {banner.title.length > 15 ? banner.title.substring(0, 15) + "..." : banner.title}
+              </span>
 
-      {/* Indicators */}
-      <div className="absolute bottom-6 left-1/2 flex -translate-x-1/2 gap-2">
-        {BANNERS.map((_, i) => (
-          <button
-            key={i}
-            onClick={() => setCurrent(i)}
-            className={`h-2 rounded-full transition-all ${
-              current === i ? "w-8 bg-white" : "w-2 bg-white/40"
-            }`}
-          />
-        ))}
-      </div>
+              {/* Progress Bar Container */}
+              <div className="absolute bottom-0 left-0 w-full h-[3px] bg-slate-200">
+                {selectedIndex === i && (
+                  <div
+                    key={selectedIndex}
+                    className={`h-full bg-red-600 animate-progress ${isPaused ? "pause-animation" : ""}`}
+                  />
+                )}
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
