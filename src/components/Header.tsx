@@ -1,23 +1,62 @@
 "use client";
 
 import React from "react";
-import { usePathname } from "next/navigation";
-import { 
-  Search, 
-  MapPin, 
-  Box, 
-  User, 
-  ShoppingCart, 
-  Menu 
+import { usePathname, useRouter } from "next/navigation";
+import Link from "next/link";
+import {
+  Search,
+  MapPin,
+  Box,
+  User,
+  ShoppingCart,
+  Menu,
+  LogOut,
+  LayoutDashboard,
+  Loader2
 } from "lucide-react";
+import { createClient } from "@/utils/supabase/client";
+import { User as SupabaseUser } from "@supabase/supabase-js";
+import { isAdmin, getUserName } from "@/utils/auth-helpers";
+import { signOut } from "@/app/auth/actions";
+import { useTransition } from "react";
 
 /**
- * Header component inspired by Cellphones.com.vn with QuizLM aesthetics.
+ * Header component 
  */
 export default function Header() {
   const pathname = usePathname();
-  
-  // Hide header on admin pages
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [user, setUser] = React.useState<SupabaseUser | null>(null);
+  const [loading, setLoading] = React.useState(true);
+  const supabase = createClient();
+
+  const handleSignOut = () => {
+    startTransition(async () => {
+      await signOut();
+      router.refresh();
+    });
+  };
+
+  React.useEffect(() => {
+    const getUser = async () => {
+      if (!supabase) return;
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+      setLoading(false);
+    };
+    getUser();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase!.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [supabase]);
+
+  // Hide header on admin pages (optional, but keep per existing logic)
   if (pathname?.startsWith("/admin")) {
     return null;
   }
@@ -50,8 +89,40 @@ export default function Header() {
         <div className="hidden items-center gap-1 md:flex">
           <HeaderAction icon={<MapPin size={20} />} label="Cửa hàng" subLabel="Gần bạn" />
           <HeaderAction icon={<Box size={20} />} label="Đơn hàng" subLabel="Tra cứu" />
-          <HeaderAction icon={<User size={20} />} label="Thành viên" subLabel="Smember" />
-          
+
+          {!loading && user ? (
+            <div className="flex items-center gap-1">
+              {isAdmin(user) && (
+                <Link href="/admin">
+                  <HeaderAction icon={<LayoutDashboard size={20} />} label="Quản trị" subLabel="Admin" />
+                </Link>
+              )}
+              <div className="group relative">
+                <HeaderAction
+                  icon={<User size={20} className="text-primary" />}
+                  label={getUserName(user)}
+                  subLabel="Xin chào"
+                />
+                <div className="absolute right-0 top-full hidden w-48 pt-2 group-hover:block">
+                  <div className="rounded-2xl border border-slate-100 bg-white p-2 shadow-xl ring-1 ring-black/5">
+                    <button
+                      onClick={handleSignOut}
+                      disabled={isPending}
+                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50"
+                    >
+                      {isPending ? <Loader2 className="animate-spin" size={18} /> : <LogOut size={18} />}
+                      {isPending ? "Đang xử lý..." : "Đăng xuất"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <Link href="/login">
+              <HeaderAction icon={<User size={20} />} label="Thành viên" subLabel="Smember" />
+            </Link>
+          )}
+
           <button className="relative ml-2 flex flex-col items-center gap-0.5 rounded-xl p-2 text-primary transition-colors hover:bg-primary/10">
             <ShoppingCart size={24} />
             <span className="text-[10px] font-bold">Giỏ hàng</span>

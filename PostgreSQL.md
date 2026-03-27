@@ -73,7 +73,53 @@ CREATE TABLE banners (
 
 CREATE INDEX idx_banners_active_order ON banners(is_active, display_order);
 
--- 7. Sample Data Insertion
+-- 7. Auth & RBAC Tables
+-- ------------------------------------------
+
+-- Profiles table (Syncs with auth.users)
+CREATE TABLE IF NOT EXISTS public.profiles (
+    id UUID REFERENCES auth.users ON DELETE CASCADE PRIMARY KEY,
+    email TEXT UNIQUE,
+    full_name TEXT,
+    avatar_url TEXT,
+    phone TEXT UNIQUE,
+    is_active BOOLEAN DEFAULT TRUE,
+    role TEXT DEFAULT 'user' CHECK (role IN ('user', 'admin')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Enable RLS on profiles
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+
+-- 8. Triggers & Functions
+-- ------------------------------------------
+
+-- Function to handle new user signup
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.profiles (id, email, full_name, avatar_url, phone, is_active, role)
+  VALUES (
+    NEW.id,
+    NEW.email,
+    COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name', 'User'),
+    COALESCE(NEW.raw_user_meta_data->>'avatar_url', NEW.raw_user_meta_data->>'picture', NULL),
+    NEW.raw_user_meta_data->>'phone',
+    TRUE,
+    COALESCE(NEW.raw_user_meta_data->>'role', 'user')
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Trigger to sync auth.users with public.profiles
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- 9. Sample Data Insertion
 
 -- Brands
 INSERT INTO brands (name) VALUES 

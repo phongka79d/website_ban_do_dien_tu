@@ -1,57 +1,74 @@
 # Project Structure: Antigravity E-commerce Platform
 
-This document describes the function of each file and its key components or functions within the project.
+This document describes the function of each file and its key components or functions within the project, including recent architectural stability improvements.
 
 ## 1. Core Application (src/app)
 
+### Global Configuration & Layout
 | Path | Description | Key Components / Functions |
 | :--- | :--- | :--- |
-| `app/layout.tsx` | Root layout for the entire application. | Wraps children with `Header` and global styles. |
-| `app/page.tsx` | Home page (Landing & Products). | Renders product listing with Carousel and Filter Bar. |
-| `app/admin/layout.tsx` | Layout for the Admin Dashboard. | Provides sidebar navigation for admin routes. |
-| `app/admin/page.tsx` | Admin Dashboard Overview. | Shows high-level statistics and product management. |
-| `app/admin/products/page.tsx` | Product Management List. | Table view with Edit/Delete actions. |
-| `app/admin/products/new/page.tsx` | Add New Product Page. | Wrapper for the `ProductForm` component. |
-| `app/admin/products/[id]/edit/page.tsx` | Edit Product Page. | Dynamic route for updating existing products. |
+| `app/layout.tsx` | Global Root Layout. | Registers `ServiceWorkerManager` and `Header`. |
+| `app/not-found.tsx` | Global 404 Fallback. | Prevents site-wide crashes on dead local links. |
+| `app/globals.css` | Global Styles (Tailwind 4). | Theme variables for Magenta/Indigo color palette. |
 
-## 2. UI Components (src/components)
-
-### General Components
+### Shop Segment (`app/(shop)`)
 | Path | Description | Key Functions |
 | :--- | :--- | :--- |
-| `components/Header.tsx` | Main navigation bar. | Includes category search and user links. Hides on Admin routes. |
-| `components/Footer.tsx` | Professional site footer. | Multi-column layout with benefits and policies. Hides on Admin. |
-| `components/ProductCard.tsx` | Professional product card. | Displays price, badges, spec tags (CellphoneS style). |
-| `components/ProductList.tsx` | Product grid container. | Renders a grid of `ProductCard` components. |
-| `components/Carousel.tsx` | Banner slider. | Displays promotional images on the homepage. |
-| `components/common/ProductImage.tsx` | Unified image handler. | Centralizes Cloudinary vs External URL logic. |
-| `components/common/ConfirmationModal.tsx` | Reusable popup modal. | Premium confirmation dialog with variants (danger/info). |
+| `app/(shop)/layout.tsx` | Shop-specific wrapper. | Adds `Suspense` for async data loading. |
+| `app/(shop)/page.tsx` | Homepage (Landing). | Renders Premium `Carousel` and Product grid. |
 
-### Admin Components (src/components/admin)
+### Admin Segment (`app/admin`)
 | Path | Description | Key Functions |
 | :--- | :--- | :--- |
-| `components/admin/ProductForm.tsx` | Product Form UI. | Orchestrates layout. Uses `useProductForm` hook for logic. |
-| `components/admin/AdminInput.tsx` | Reusable input field. | Standardized styling for admin forms. |
-| `components/admin/ProductForm.tsx` | Add/Edit product form. | Handles complex product data including specs & images. |
-| `components/admin/CategoryManager.tsx` | Category CRUD manager. | List and modify categories with name/slug/description. |
-| `components/admin/BrandManager.tsx` | Brand CRUD manager. | List and modify brands with logo support. |
-| `components/admin/AdminSidebar.tsx` | Admin navigation. | High-quality sidebar with active state tracking. |
-| `components/admin/SpecManager.tsx` | Specification editor. | Key-Value UI for technical specs (JSONB). |
-| `components/admin/ImageUpload.tsx` | Cloudinary Integration. | Handles image uploads and preview display. |
+| `admin/page.tsx` | Dashboard Overview. | High-level statistics and navigation. |
+| `admin/products/` | Product Management. | CRUD for tech products & images. |
+| `admin/banners/` | Banner Editor. | Management for the homepage Carousel items. |
+| `admin/categories/` | Category CRUD. | Grouping management (slug-based). |
+| `admin/brands/` | Brand CRUD. | Manufacturer management with logo support. |
 
-## 3. Data & Logic (src/services, src/utils, src/types, src/hooks)
+---
 
+## 2. Stability & Architecture Layers
+
+### Network Interceptor (Next.js 16 Fix)
 | Path | Description | Key Functions |
 | :--- | :--- | :--- |
-| `services/productService.ts` | Data Access Layer. | CRUD operations for products, categories, and brands. |
-| `hooks/useProductForm.ts` | Form Logic Hook. | Manages state, validation, and submission for products. |
-| `types/database.ts` | Database Schema Types. | `Product`, `Brand`, `Category`, `ProductWithDetails`. |
-| `utils/supabase/client.ts` | Browser Client. | `createClient()` for client-side Supabase access. |
-| `utils/supabase/server.ts` | Server Client. | `createClient()` for SSR and Server Components. |
+| `public/sw.js` | **Service Worker**. | Intercepts navigations to bypass Router Cache freeze. |
+| `components/ServiceWorkerManager.tsx` | SW Registration (Client). | Registers SW safely on the client side. |
 
-## 4. Configuration & Styles
+### Documentation & Forensics
 | Path | Description |
 | :--- | :--- |
-| `app/globals.css` | Global Tailwind CSS styles and theme colors (Magenta/Indigo). |
-| `.env.local` | Sensitive environment variables (Supabase URL, Cloudinary Keys). |
-| `Database.md` | Reference document for the database schema. |
+| `Bug.md` | **Forensic History**. | Detailed log of investigation and fixes for the Carousel freeze. |
+| `ARCHITECTURE_SUMMARY.md` | **Full Architecture Report**. | High-level overview of tech stack and design patterns. |
+| `Database.md` | **Database Schema**. | Details on PgSQL tables and JSONB specifications. |
+
+---
+
+## 3. UI Components (src/components)
+
+### Premium General Components
+| Path | Description | Key Features |
+| :--- | :--- | :--- |
+| `components/Carousel.tsx` | Premium Banner Slider. | 50/50 Layout, Glassmorphism buttons, Mobile full-bleed. |
+| `components/Header.tsx` | Sticky Navigation. | Category search & User links with admin detection. |
+| `components/Footer.tsx` | Site Footer. | Benefits, Policies, and multi-column info. |
+| `components/ProductCard.tsx` | Dynamic Product Card. | Responsive layout with tech-spec tag badges. |
+
+### Admin Components
+| Path | Description | Key Functions |
+| :--- | :--- | :--- |
+| `components/admin/ProductForm.tsx` | Complex Product Form. | Handles JSONB specs and Cloudinary image logic. |
+| `components/admin/SpecManager.tsx` | JSONB Editor. | Dynamic Key-Value editing for product specs. |
+| `components/admin/AdminSidebar.tsx` | Sidebar Navigation. | High-quality navigation for administrative routes. |
+
+---
+
+## 4. Data & Logic (src/services,hooks,utils)
+
+| Path | Description | Key Functions |
+| :--- | :--- | :--- |
+| `services/productService.ts` | Product DAL. | Fully typed Supabase operations for products. |
+| `services/bannerService.ts` | Banner DAL. | Supabase operations for Carousel banners. |
+| `hooks/useProductForm.ts` | Product State Hook. | Complex form state management & validation. |
+| `utils/supabase/` | Supabase Config. | Browser and Server clients for universal access. |

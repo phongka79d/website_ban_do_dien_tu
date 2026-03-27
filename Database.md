@@ -69,6 +69,20 @@ Stores items for the homepage carousel/slider.
 | `is_active` | BOOLEAN | Toggle visibility |
 | `display_order` | INT | Sorting priority |
 | `created_at` | TIMESTAMPTZ | Creation timestamp |
+| `display_order` | INT | Sorting priority |
+
+### 2.6 `profiles`
+Extended user information, synchronized with Supabase Auth.
+| Column | Type | Description |
+| :--- | :--- | :--- |
+| `id` | UUID (PK) | Foreign Key to `auth.users` |
+| `email` | TEXT (Unique) | User's email address |
+| `full_name` | TEXT | User's display name |
+| `avatar_url` | TEXT | Profile picture URL |
+| `phone` | TEXT (Unique) | User's phone number |
+| `is_active` | BOOLEAN | Account status (Default: TRUE) |
+| `role` | VARCHAR(20) | User role: `user` or `admin` |
+| `updated_at` | TIMESTAMPTZ | Last profile update |
 
 ## 3. JSONB Specification Examples
 The `specs` column allows for category-specific data without schema changes.
@@ -80,4 +94,5 @@ The `specs` column allows for category-specific data without schema changes.
 ## 4. Performance Optimization
 - **GIN Index**: Applied to `products(specs)` for efficient JSON searching.
 - **B-Tree Indexes**: Applied to `price`, `category_slug`, and `brand_id` for fast filtering.
+- **Trigger Sync**: Database function `handle_new_user()` ensures `public.profiles` is always in sync with `auth.users`.
 - **Primary-Foreign Keys**: Enforced to ensure data integrity across all entities.
