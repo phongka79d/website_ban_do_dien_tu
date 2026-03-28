@@ -4,22 +4,24 @@ import { CldUploadWidget, CldImage } from "next-cloudinary";
 interface ImageUploadProps {
   label: string;
   imageUrl: string;
+  categoryFolder?: string;
   onSuccess: (result: any) => void;
   onClose: () => void;
   onRemove: () => void;
 }
 
-export const ImageUpload: React.FC<ImageUploadProps> = ({ 
-  label, 
-  imageUrl, 
-  onSuccess, 
-  onClose, 
-  onRemove 
+export const ImageUpload: React.FC<ImageUploadProps> = ({
+  label,
+  imageUrl,
+  categoryFolder,
+  onSuccess,
+  onClose,
+  onRemove
 }) => {
   return (
     <div className="space-y-4">
       <label className="text-sm font-bold text-slate-700 uppercase tracking-wider block">{label}</label>
-      
+
       {imageUrl ? (
         <div className="relative w-full max-w-sm aspect-video rounded-2xl overflow-hidden border-2 border-primary shadow-xl group">
           <CldImage
@@ -30,7 +32,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
             alt="Preview"
             className="object-cover w-full h-full"
           />
-          <button 
+          <button
             type="button"
             onClick={onRemove}
             className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white font-bold transition-all backdrop-blur-sm"
@@ -40,8 +42,11 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
           </button>
         </div>
       ) : (
-        <CldUploadWidget 
-          uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET} 
+        <CldUploadWidget
+          uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET}
+          options={{
+            folder: categoryFolder || "web_ban_do_dien_tu/products/uncategorized",
+          }}
           onSuccess={onSuccess}
           onClose={onClose}
         >

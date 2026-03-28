@@ -68,6 +68,45 @@ export const ProductService = {
   },
 
   /**
+   * Fetches a single category by slug.
+   */
+  async getCategoryBySlug(supabase: SupabaseClient, slug: string): Promise<Category | null> {
+    const { data, error } = await supabase
+      .from("categories")
+      .select("*")
+      .eq("slug", slug)
+      .single();
+
+    if (error) {
+       console.error(`Error fetching category ${slug}:`, error.message);
+       return null;
+    }
+    return data as Category;
+  },
+
+  /**
+   * Fetches products grouped by a specific category slug.
+   */
+  async getProductsByCategory(supabase: SupabaseClient, categorySlug: string): Promise<ProductWithDetails[]> {
+    const { data, error } = await supabase
+      .from("products")
+      .select(`
+        *,
+        brands (*),
+        categories (*)
+      `)
+      .eq("category_slug", categorySlug)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error(`Error fetching products for category ${categorySlug}:`, error.message);
+      return [];
+    }
+    
+    return (data as ProductWithDetails[]) || [];
+  },
+
+  /**
    * Fetches all brands.
    */
   async getBrands(supabase: SupabaseClient): Promise<Brand[]> {

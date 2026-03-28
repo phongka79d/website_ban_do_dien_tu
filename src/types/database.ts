@@ -38,6 +38,7 @@ export interface Product {
   rating: number | null;
   reviews_count: number;
   promotion_text: string | null;
+  description: string | null;
   has_installment_0: boolean;
   stock_quantity: number;
   created_at: string;

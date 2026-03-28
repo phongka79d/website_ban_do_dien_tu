@@ -25,6 +25,7 @@ export function useProductForm(initialData?: Product) {
     price: initialData?.price?.toString() || "",
     original_price: initialData?.original_price?.toString() || "",
     promotion_text: initialData?.promotion_text || "",
+    description: initialData?.description || "",
     category_slug: initialData?.category_slug || "",
     brand_id: initialData?.brand_id || "",
     stock_quantity: initialData?.stock_quantity?.toString() || "0",
@@ -104,6 +105,7 @@ export function useProductForm(initialData?: Product) {
         stock_quantity: Number(formData.stock_quantity),
         specs: specsObject,
         image_url: imageUrl,
+        description: formData.description || null,
       };
 
       const { error } = initialData

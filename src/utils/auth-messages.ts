@@ -11,7 +11,8 @@ const AUTH_MESSAGES: Record<string, string> = {
   "Invalid OTP": "Mã xác thực không chính xác. Vui lòng thử lại.",
   "Too many requests": "Bạn đã thực hiện quá nhiều yêu cầu. Vui lòng thử lại sau ít phút.",
   "Password should contain at least one character": "Mật khẩu phải bao gồm chữ thường, chữ hoa, số và ký tự đặc biệt.",
-  
+  "Database error saving new user": "Đã có lỗi xảy ra (69d)",
+
   // Custom Application Errors
   "phone-not-found": "Không tìm thấy tài khoản với số điện thoại này.",
   "account-blocked": "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ bộ phận CSKH.",
@@ -27,13 +28,13 @@ const AUTH_MESSAGES: Record<string, string> = {
  */
 export function getAuthMessage(error: string | undefined): string {
   if (!error) return AUTH_MESSAGES["unknown-error"];
-  
+
   // Try to find direct match or partial match for common Supabase errors
   for (const key in AUTH_MESSAGES) {
     if (error.includes(key)) {
       return AUTH_MESSAGES[key];
     }
   }
-  
+
   return error || AUTH_MESSAGES["unknown-error"];
 }

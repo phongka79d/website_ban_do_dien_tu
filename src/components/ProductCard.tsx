@@ -3,6 +3,7 @@
 import { Star, Heart } from "lucide-react";
 import { Product } from "@/types/database";
 import { ProductImage } from "./common/ProductImage";
+import Link from "next/link";
 
 interface ProductCardProps {
   product: Product;
@@ -29,7 +30,7 @@ export default function ProductCard({ product }: ProductCardProps) {
   const specTags = specs ? Object.entries(specs).slice(0, 3) : [];
 
   return (
-    <div className="group relative flex flex-col h-full overflow-hidden rounded-[20px] border border-slate-100 bg-white p-3 shadow-[0_4px_12px_rgba(0,0,0,0.05)] transition-all duration-300 hover:shadow-xl hover:-translate-y-1 cursor-pointer">
+    <Link href={`/products/${product.id}`} prefetch={false} className="group relative flex flex-col h-full overflow-hidden rounded-[20px] border border-slate-100 bg-white p-3 shadow-[0_4px_12px_rgba(0,0,0,0.05)] transition-all duration-300 hover:shadow-xl hover:-translate-y-1 cursor-pointer">
 
       {/* Badges Overlay */}
       <div className="absolute top-0 left-0 right-0 z-10 flex justify-between p-0 pointer-events-none">
@@ -107,12 +108,15 @@ export default function ProductCard({ product }: ProductCardProps) {
             <Star className="fill-yellow-400 text-yellow-400" size={12} />
             <span className="text-[13px] font-bold text-slate-700">{rating || "4.9"}</span>
           </div>
-          <button className="flex items-center gap-1 hover:brightness-110 transition-all">
+          <button 
+            onClick={(e) => { e.preventDefault(); /* TODO: Handle Favorite logic here */ }}
+            className="flex items-center gap-1 hover:brightness-110 transition-all"
+          >
             <Heart size={16} className="text-[#4486e1]" />
             <span className="text-[11px] font-bold text-[#4486e1]">Yêu thích</span>
           </button>
         </div>
       </div>
-    </div>
+    </Link>
   );
 }

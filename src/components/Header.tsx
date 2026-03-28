@@ -92,11 +92,6 @@ export default function Header() {
 
           {!loading && user ? (
             <div className="flex items-center gap-1">
-              {isAdmin(user) && (
-                <Link href="/admin">
-                  <HeaderAction icon={<LayoutDashboard size={20} />} label="Quản trị" subLabel="Admin" />
-                </Link>
-              )}
               <div className="group relative">
                 <HeaderAction
                   icon={<User size={20} className="text-primary" />}
@@ -104,7 +99,23 @@ export default function Header() {
                   subLabel="Xin chào"
                 />
                 <div className="absolute right-0 top-full hidden w-48 pt-2 group-hover:block">
-                  <div className="rounded-2xl border border-slate-100 bg-white p-2 shadow-xl ring-1 ring-black/5">
+                  <div className="rounded-2xl border border-slate-100 bg-white p-2 shadow-xl ring-1 ring-black/5 flex flex-col gap-1">
+                    <Link
+                      href="/profile"
+                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-50"
+                    >
+                      <User size={18} />
+                      Thông tin cá nhân
+                    </Link>
+                    {isAdmin(user) && (
+                      <Link
+                        href="/admin"
+                        className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold text-indigo-600 transition-colors hover:bg-indigo-50"
+                      >
+                        <LayoutDashboard size={18} />
+                        Dashboard Admin
+                      </Link>
+                    )}
                     <button
                       onClick={handleSignOut}
                       disabled={isPending}
