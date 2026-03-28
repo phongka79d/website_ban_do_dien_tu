@@ -11,6 +11,8 @@ import { useProductForm } from "@/hooks/useProductForm";
 import NotificationModal from "@/components/common/NotificationModal";
 import ConfirmationModal from "@/components/common/ConfirmationModal";
 import { useRouter } from "next/navigation";
+import { Button } from "../ui/Button";
+import { Card } from "../ui/Card";
 
 interface ProductFormProps {
   initialData?: Product;
@@ -70,7 +72,7 @@ export default function ProductForm({ initialData }: ProductFormProps) {
       <form onSubmit={handleFormSubmit} className="grid grid-cols-12 gap-6 items-stretch">
         {/* Row 1: Information & Settings */}
         <div className="col-span-12 lg:col-span-8">
-          <section className="bg-white rounded-[32px] p-8 border border-slate-100 shadow-[2px_10px_30px_rgb(0,0,0,0.02)] relative overflow-hidden h-full flex flex-col">
+          <Card variant="elevated" radius="2xl" className="p-8 h-full flex flex-col relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-slate-50 rounded-bl-[60px] -z-0"></div>
             <div className="relative z-10">
               <h2 className="text-xl font-black text-slate-900 mb-8 flex items-center gap-2">
@@ -124,11 +126,11 @@ export default function ProductForm({ initialData }: ProductFormProps) {
                 </div>
               </div>
             </div>
-          </section>
+          </Card>
         </div>
 
         <div className="col-span-12 lg:col-span-4 h-full">
-          <section className="bg-white rounded-[32px] p-8 border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] h-full relative overflow-hidden">
+          <Card variant="elevated" radius="2xl" className="p-8 h-full relative overflow-hidden">
             <div className="absolute top-0 right-0 w-24 h-24 bg-slate-50 rounded-bl-[40px] -z-0"></div>
             <div className="relative z-10">
               <h2 className="text-xl font-black text-slate-900 mb-8 flex items-center gap-2">
@@ -166,12 +168,12 @@ export default function ProductForm({ initialData }: ProductFormProps) {
                 </div>
               </div>
             </div>
-          </section>
+          </Card>
         </div>
 
         {/* Row 2: Specs & Media/Submit */}
         <div className="col-span-12 lg:col-span-8">
-          <section className="bg-white rounded-[32px] p-8 border border-slate-100 shadow-[2px_10px_30px_rgb(0,0,0,0.02)] h-full flex flex-col relative">
+          <Card variant="elevated" radius="2xl" className="p-8 h-full flex flex-col relative overflow-hidden">
             <h2 className="text-xl font-black text-slate-900 mb-8 flex items-center gap-2">
               <span className="w-2 h-6 bg-indigo-500 rounded-full"></span>
               Thông số kỹ thuật
@@ -184,11 +186,11 @@ export default function ProductForm({ initialData }: ProductFormProps) {
                 onUpdate={updateSpec}
               />
             </div>
-          </section>
+          </Card>
         </div>
 
         <div className="col-span-12 lg:col-span-4 space-y-6">
-          <section className="bg-white rounded-[32px] p-8 border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] relative overflow-hidden">
+          <Card variant="elevated" radius="2xl" className="p-8 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-24 h-24 bg-slate-50 rounded-bl-[40px] -z-0"></div>
             <div className="relative z-10">
               <h2 className="text-xl font-black text-slate-900 mb-8 flex items-center gap-2">
@@ -207,19 +209,23 @@ export default function ProductForm({ initialData }: ProductFormProps) {
                 onRemove={() => setImageUrl("")}
               />
             </div>
-          </section>
+          </Card>
 
-          <div className="bg-white/50 backdrop-blur-xl p-2 rounded-[28px] border border-white shadow-xl">
-            <button
-              disabled={loading || !imageUrl}
-              className="w-full py-5 rounded-2xl bg-primary text-white font-black text-[15px] shadow-lg shadow-primary/20 hover:scale-[1.01] active:scale-95 disabled:grayscale transition-all uppercase tracking-[2px] cursor-pointer"
+          <Card variant="glass" radius="xl" className="p-2 border-white shadow-xl">
+            <Button
+              type="submit"
+              isLoading={loading}
+              disabled={!imageUrl}
+              fullWidth
+              size="lg"
+              className="py-5 text-[15px] tracking-[2px]"
             >
-              {loading ? "ĐANG LƯU..." : isEdit ? "LƯU THAY ĐỔI" : "TẠO SẢN PHẨM"}
-            </button>
+              {isEdit ? "LƯU THAY ĐỔI" : "TẠO SẢN PHẨM"}
+            </Button>
             <p className="text-center text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-4 opacity-40">
               Vui lòng kiểm tra kỹ trước khi xác nhận
             </p>
-          </div>
+          </Card>
         </div>
       </form>
 

@@ -2,6 +2,7 @@
 
 import React, { useState, useTransition } from "react";
 import { Loader2, KeyRound, ShieldAlert, Eye, EyeOff, ShieldCheck } from "lucide-react";
+import OtpField from "@/components/auth/OtpField";
 import { verifyOldPasswordAndSendOtp, verifyOtpAndChangePassword } from "@/app/auth/profile-actions";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
@@ -173,17 +174,12 @@ export default function SecurityPage() {
             </div>
 
             <form onSubmit={handleStep2Submit} className="space-y-6">
-              <div className="space-y-1.5">
-                <label className="text-xs font-black uppercase tracking-wider text-slate-500 ml-1">Mã xác thực</label>
-                <div className="relative">
-                  <input
-                    type="text" required maxLength={6}
-                    value={otp} onChange={e => setOtp(e.target.value.replace(/[^0-9]/g, ''))}
-                    placeholder="123456"
-                    className="w-full tracking-[1em] text-center rounded-2xl border border-slate-200 bg-white py-4 text-lg font-black outline-none transition-all focus:border-primary focus:ring-4 focus:ring-primary/10"
-                  />
-                </div>
-              </div>
+              <OtpField
+                value={otp}
+                onChange={setOtp}
+                label="Mã xác thực"
+                accentColor="primary"
+              />
 
               <div className="flex flex-col sm:flex-row gap-3 pt-2">
                 <button

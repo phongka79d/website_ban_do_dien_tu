@@ -75,7 +75,7 @@ export const ProductService = {
       .from("categories")
       .select("*")
       .eq("slug", slug)
-      .single();
+      .maybeSingle();
 
     if (error) {
        console.error(`Error fetching category ${slug}:`, error.message);

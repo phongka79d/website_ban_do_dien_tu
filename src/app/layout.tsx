@@ -21,6 +21,8 @@ export const metadata: Metadata = {
 
 import ServiceWorkerManager from "@/components/ServiceWorkerManager";
 import { Suspense } from "react";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 
 export default function RootLayout({
   children,
@@ -34,9 +36,13 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-slate-50">
         <ServiceWorkerManager />
-        <Suspense fallback={null}>
-          {children}
-        </Suspense>
+        <Header />
+        <main className="flex-1 flex flex-col">
+          <Suspense fallback={null}>
+            {children}
+          </Suspense>
+        </main>
+        <Footer />
       </body>
     </html>
   );

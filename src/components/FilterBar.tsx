@@ -1,22 +1,26 @@
+import { Button } from "./ui/Button";
 
 const FILTERS = ["Tất cả", "Sắp tới", "Đang hot", "Khuyến mãi", "Giá tốt"];
 
 /**
- * Minimalist filter bar with pill-shaped buttons.
+ * Minimalist filter bar with pill-shaped buttons using Atomic Button component.
  */
 export default function FilterBar() {
   return (
     <div className="flex flex-wrap gap-3 overflow-x-auto py-4 no-scrollbar">
       {FILTERS.map((filter, index) => (
-        <button
+        <Button
           key={filter}
-          className={`whitespace-nowrap rounded-full px-6 py-2 text-sm font-semibold transition-all border-2 ${index === 0
-              ? "bg-primary border-primary text-white"
-              : "bg-white/50 border-white/20 text-slate-600 hover:bg-white hover:border-secondary hover:text-secondary"
-            }`}
+          variant={index === 0 ? "primary" : "soft"}
+          size="sm"
+          className={`whitespace-nowrap px-6 rounded-full border-2 ${
+            index === 0 
+              ? "border-primary" 
+              : "border-transparent hover:border-secondary hover:text-secondary bg-white/50"
+          }`}
         >
           {filter}
-        </button>
+        </Button>
       ))}
     </div>
   );

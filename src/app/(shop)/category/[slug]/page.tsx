@@ -21,9 +21,9 @@ export default async function CategoryPage(props: { params: Promise<{ slug: stri
   if (!category) return notFound();
 
   return (
-    <div className="min-h-screen bg-slate-50 pt-24 pb-32">
+    <div className="min-h-screen bg-slate-50 pt-12 pb-32">
       <div className="container mx-auto px-4 lg:px-8 max-w-7xl">
-        
+
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-[13px] font-medium text-slate-500 mb-8 animate-in slide-in-from-left-4 duration-500">
           <Link href="/" prefetch={false} className="hover:text-primary transition-colors">
@@ -74,9 +74,9 @@ export default async function CategoryPage(props: { params: Promise<{ slug: stri
             <p className="text-slate-500 font-medium max-w-sm">
               Rất tiếc, hiện tại danh mục {category.name} chưa có sản phẩm nào được bày bán. Vui lòng quay lại sau!
             </p>
-            <Link 
-              href="/" 
-              prefetch={false} 
+            <Link
+              href="/"
+              prefetch={false}
               className="mt-8 px-8 py-3 bg-slate-900 text-white font-bold rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all"
             >
               Về trang chủ

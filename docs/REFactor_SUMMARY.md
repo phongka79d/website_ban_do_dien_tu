@@ -2,60 +2,62 @@
 
 Ngày báo cáo: 28/03/2026
 Người thực hiện: Antigravity AI (Orchestrator Mode)
+Cập nhật lần cuối: 28/03/2026 — Sprint P0 + P1 + P2 **HOÀN THÀNH**
 
 ---
 
-## 🏗️ 1. Hiện trạng Kiến trúc (Current Architecture)
-
-Dự án đang sử dụng Next.js (App Router) với phong cách thiết kế hiện đại (Glassmorphism), nhưng đang gặp vấn đề về **sự trùng lặp mã nguồn (Code Duplication)** ở các thành phần sau:
+## 🏗️ 1. Hiện trạng Kiến trúc
 
 ### 📱 1.1 Luồng Xác thực (Auth Flow)
-- **Tình trạng**: Các trang `login`, `register`, `forgot-password` và `profile/security` đang sao chép gần như 100% mã CSS cho phần UI Card (backdrop-blur, border tinh thể). 
-- **Mã lặp**: ~120 dòng code UI Card ở mỗi file.
+- ✅ **`AuthCard.tsx`** — Glassmorphism wrapper, tích hợp: `login`, `register`, `forgot-password`.
+- ✅ **`AuthInput.tsx`** — Input field chuẩn (icon, labelSlot, rightSlot, error), tích hợp: `login`, `register`, `forgot-password`.
 
-### 🔢 1.2 Thành phần OTP (6-Digit Input)
-- **Tình trạng**: Logic nhập OTP, bộ đếm ngược 60 giây và nút "Gửi lại mã" đang được code cứng trong từng trang. Khi bạn sửa logic ở một nơi (như tôi vừa sửa lỗi Rules of Hooks) thì các trang khác vẫn còn lỗi cũ.
-- **Vị trí**: `register`, `forgot-password`, `profile/security`.
+### 🔢 1.2 Thành phần OTP
+- ✅ **`OtpField.tsx`** — OTP 6 số + countdown + resend, tích hợp: `register`, `forgot-password`, `profile/security`.
 
-### 🛠️ 1.3 Hệ thống Admin (CRUD Managers)
-- **Tình trạng**: `BannerManager`, `BrandManager` và `CategoryManager` có cấu trúc rập khuôn. Mỗi file dài ~350-400 dòng, trong đó phần lớn là mã JSX cho các Modal (Thêm/Sửa/Xóa).
-- **Vấn đề**: Khó bảo trì giao diện Admin đồng nhất.
+### 🛠️ 1.3 Hệ thống Admin
+- ✅ **`AdminManagerShell.tsx`** — Search + Thêm mới + Loading + Empty state, tích hợp: Banner, Brand, Category.
+- ✅ **`AdminActionModal.tsx`** — Modal scaffold Create/Edit, tích hợp: Banner, Brand, Category.
+- ✅ **`StatusBadge.tsx`** (`ui/`) — Badge Active/Inactive, tích hợp: BannerManager.
 
 ---
 
 ## 🎯 2. Danh sách "Ứng viên" Component hóa
 
 ### 💎 Atoms (Thành phần nguyên tử)
-- **`ui/Card.tsx`**: Wrapper dùng chung cho hiệu ứng Glassmorphism.
-- **`ui/Input.tsx`**: Input field tiêu chuẩn (Icon + Floating Label + Error).
-- **`ui/Button.tsx`**: Nút bấm với các trạng thái Loading tích hợp sẵn.
-- **`ui/StatusBadge.tsx`**: Hiển thị trạng thái Active/Inactive, Success/Error.
+- ⬜ **`ui/Card.tsx`** — Gác lại, `AuthCard` đủ dùng cho Auth scope.
+- ⬜ **`ui/Button.tsx`** — Gác lại đến P3, quá nhiều biến thể.
 
-### 🧬 Molecules (Thành phần phân tử)
-- **`auth/OtpField.tsx`**: Gom nhóm logic OTP 6 số + Timer + Resend Action.
-- **`admin/ManagerHeader.tsx`**: Search bar + Nút thêm mới tiêu chuẩn của Admin.
-- **`admin/ActionModal.tsx`**: Modal khung dùng cho các form Create/Edit.
+### 🧬 Molecules
+- ✅ `auth/AuthCard.tsx`
+- ✅ `auth/AuthInput.tsx`
+- ✅ `auth/OtpField.tsx`
+- ✅ `admin/AdminManagerShell.tsx`
+- ✅ `admin/AdminActionModal.tsx`
+- ✅ `ui/StatusBadge.tsx`
 
 ### 🧪 Logic & Hooks
-- **`useOtpTimer`**: Hook quản lý đếm ngược và trạng thái resend.
-- **`useAuthActions`**: Gom nhóm logic gọi API Login/Register sạch sẽ hơn.
+- ✅ **`useOtpTimer`** — Tích hợp bên trong `OtpField`, không tách riêng.
+- ❌ **`useAuthActions`** — Loại bỏ, không đủ ROI.
 
 ---
 
-## 🚀 3. Lộ trình Đề xuất (Refactoring Roadmap)
+## 🚀 3. Lộ trình Refactoring
 
-| Ưu tiên | Thành phần | Lợi ích | Độ khó |
-|:---:|:---|:---|:---:|
-| **P0** | **`OtpField.tsx`** | Xóa sạch logic dư thừa ở 3 trang cực kỳ quan trọng. | Trung bình |
-| **P0** | **`AuthCard.tsx`** | Thống nhất giao diện Glassmorphism trên toàn site. | Dễ |
-| **P1** | **`AdminBaseTable`** | Rút ngắn 60% code cho các trang quản trị Admin. | Cao |
-| **P2** | **`FormValidator`** | Tự động hóa việc hiển thị thông báo lỗi Tiếng Việt. | Trung bình |
+| Status | Ưu tiên | Thành phần | Lợi ích |
+|:---:|:---:|:---|:---|
+| ✅ | **P0** | `AuthCard.tsx` | ~45 dòng CSS wrapper |
+| ✅ | **P0** | `OtpField.tsx` | ~120 dòng logic OTP |
+| ✅ | **P0** | `AdminManagerShell.tsx` | ~150 dòng header/loading |
+| ✅ | **P1** | `AdminActionModal.tsx` | ~45 dòng modal scaffold |
+| ✅ | **P2** | `AuthInput.tsx` | ~90 dòng input blocks |
+| ✅ | **P2** | `StatusBadge.tsx` | ~8 dòng badge |
+
+> **Tổng kết**: Đã xóa **~458 dòng** code trùng lặp, tạo **6 components** tái sử dụng được.
 
 ---
 
-## 💡 4. Đề xuất Hướng đi
+## 💡 4. Sprint P3 (Tương lai — chưa có kế hoạch)
 
-Tôi đề nghị chúng ta bắt đầu bằng việc **Tách Component `OtpField.tsx`**. 
-- **Lý do**: Đây là phần phức tạp nhất, dễ lỗi nhất (như lỗi Rules of Hooks vừa rồi) và xuất hiện ở nhiều nơi nhạy cảm nhất.
-
-Bạn có thể lưu bản Summary này làm kim chỉ nam để chúng ta "dọn dẹp" dự án dần dần.
+- `ui/Button.tsx` — Chuẩn hóa nút bấm với loading states (khi có đủ thiết kế hệ thống).
+- `ui/Card.tsx` — Generic Glassmorphism card (nếu mở rộng ra ngoài Auth scope).

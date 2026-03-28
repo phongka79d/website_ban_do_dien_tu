@@ -4,6 +4,8 @@ import React, { useEffect, useRef, useState, Suspense } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Banner } from "@/types/database";
+import { Button, buttonVariants } from "./ui/Button";
+import { cn } from "@/utils/cn";
 
 const AUTOPLAY_DELAY = 5000;
 
@@ -46,13 +48,13 @@ export default function Carousel({ banners }: CarouselProps) {
     if (totalBanners <= 1 || isPaused) return;
 
     const timer = setInterval(() => {
-        const container = containerRef.current;
-        if (container && container.offsetParent !== null) {
-            const slideWidth = container.offsetWidth;
-            const currentIndex = Math.round(container.scrollLeft / slideWidth);
-            const nextIndex = (currentIndex + 1) % totalBanners;
-            container.scrollTo({ left: slideWidth * nextIndex, behavior: "smooth" });
-        }
+      const container = containerRef.current;
+      if (container && container.offsetParent !== null) {
+        const slideWidth = container.offsetWidth;
+        const currentIndex = Math.round(container.scrollLeft / slideWidth);
+        const nextIndex = (currentIndex + 1) % totalBanners;
+        container.scrollTo({ left: slideWidth * nextIndex, behavior: "smooth" });
+      }
     }, AUTOPLAY_DELAY);
 
     return () => clearInterval(timer);
@@ -61,7 +63,7 @@ export default function Carousel({ banners }: CarouselProps) {
   if (banners.length === 0) return null;
 
   return (
-    <div 
+    <div
       className="group flex flex-col gap-4 w-full"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
@@ -87,15 +89,18 @@ export default function Carousel({ banners }: CarouselProps) {
                   <p className="mt-3 text-[10px] md:text-sm font-medium text-white/60 max-w-[240px] md:max-w-md">
                     {banner.subtitle}
                   </p>
-                  
+
                   {banner.target_url && (
                     <div className="mt-6 md:mt-8">
                       <Link
                         href={banner.target_url}
                         prefetch={false}
-                        className="group/btn inline-flex items-center gap-2 rounded-xl bg-white/10 backdrop-blur-xl border border-white/20 px-5 md:px-7 py-2.5 md:py-3.5 text-xs md:text-sm font-bold text-white transition-all hover:bg-white/20 hover:border-white/30 active:scale-95"
+                        className={cn(
+                          buttonVariants({ variant: "soft", size: "lg", radius: "xl" }),
+                          "bg-white/10 backdrop-blur-xl border border-white/20 text-white hover:bg-white/20 hover:border-white/30"
+                        )}
                       >
-                        <span>Xem chi tiết</span>
+                        <span>Xem</span>
                         <ChevronRight size={16} className="transition-transform group-hover/btn:translate-x-1" />
                       </Link>
                     </div>
@@ -121,18 +126,24 @@ export default function Carousel({ banners }: CarouselProps) {
 
         {banners.length > 1 && (
           <>
-            <button
+            <Button
+              variant="soft"
+              size="icon"
+              radius="full"
               onClick={() => scrollTo(selectedIndex - 1)}
-              className="absolute left-6 top-1/2 z-30 hidden md:flex -translate-y-1/2 rounded-full bg-white/5 backdrop-blur-md border border-white/10 p-3 text-white opacity-0 transition-all hover:bg-white/20 active:scale-90 group-hover:opacity-100"
+              className="absolute left-6 top-1/2 z-30 hidden md:flex -translate-y-1/2 bg-white/5 backdrop-blur-md border border-white/10 text-white opacity-0 transition-all hover:bg-white/20 group-hover:opacity-100"
             >
               <ChevronLeft size={24} strokeWidth={2.5} />
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="soft"
+              size="icon"
+              radius="full"
               onClick={() => scrollTo(selectedIndex + 1)}
-              className="absolute right-6 top-1/2 z-30 hidden md:flex -translate-y-1/2 rounded-full bg-white/5 backdrop-blur-md border border-white/10 p-3 text-white opacity-0 transition-all hover:bg-white/20 active:scale-90 group-hover:opacity-100"
+              className="absolute right-6 top-1/2 z-30 hidden md:flex -translate-y-1/2 bg-white/5 backdrop-blur-md border border-white/10 text-white opacity-0 transition-all hover:bg-white/20 group-hover:opacity-100"
             >
               <ChevronRight size={24} strokeWidth={2.5} />
-            </button>
+            </Button>
           </>
         )}
       </div>
@@ -144,8 +155,8 @@ export default function Carousel({ banners }: CarouselProps) {
               key={banner.id}
               onClick={() => scrollTo(i)}
               className={`relative flex-1 min-w-[120px] px-4 py-3 rounded-xl transition-all ${selectedIndex === i
-                  ? "bg-white/5 shadow-[0_4px_12px_rgba(0,0,0,0.1)]"
-                  : "hover:bg-white/5 opacity-60"
+                ? "bg-white/5 shadow-[0_4px_12px_rgba(0,0,0,0.1)]"
+                : "hover:bg-white/5 opacity-60"
                 }`}
             >
               <span className={`text-xs font-bold whitespace-nowrap uppercase tracking-wider ${selectedIndex === i ? "text-[#1a237e]" : "text-slate-500"

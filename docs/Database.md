@@ -24,6 +24,7 @@ Defines product groupings.
 | `name` | VARCHAR(100) | Category name (Unique) |
 | `slug` | VARCHAR(100) | SEO-friendly unique slug |
 | `description` | TEXT | Category description |
+| `image_url` | TEXT | Category representative image URL |
 
 ### 2.3 `products`
 The central table for product data.

@@ -4,97 +4,63 @@ import React, { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { BannerService } from "@/services/bannerService";
 import { Banner } from "@/types/database";
-import { Plus, Edit, Trash2, Image as ImageIcon, Search, X, ExternalLink, CheckCircle2, XCircle } from "lucide-react";
+import { Edit, Trash2, Image as ImageIcon, ExternalLink } from "lucide-react";
+import StatusBadge from "@/components/ui/StatusBadge";
+
 import ConfirmationModal from "@/components/common/ConfirmationModal";
 import NotificationModal from "@/components/common/NotificationModal";
 import { AdminInput } from "./AdminInput";
 import { AdminToggle } from "./AdminToggle";
+import AdminManagerShell from "./AdminManagerShell";
+import AdminActionModal from "./AdminActionModal";
 
 export default function BannerManager() {
   const [banners, setBanners] = useState<Banner[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Modal states
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [currentBanner, setCurrentBanner] = useState<Partial<Banner> | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [notification, setNotification] = useState<{
-    isOpen: boolean;
-    title: string;
-    message: string;
-    type: "success" | "error";
-  }>({
-    isOpen: false,
-    title: "",
-    message: "",
-    type: "success",
-  });
+    isOpen: boolean; title: string; message: string; type: "success" | "error";
+  }>({ isOpen: false, title: "", message: "", type: "success" });
 
   const fetchBanners = async () => {
     setLoading(true);
     const supabase = createClient();
     if (supabase) {
-      const data = await BannerService.getBanners(supabase, false); // Fetch all including inactive
+      const data = await BannerService.getBanners(supabase, false);
       setBanners(data);
     }
     setLoading(false);
   };
 
-  useEffect(() => {
-    fetchBanners();
-  }, []);
+  useEffect(() => { fetchBanners(); }, []);
 
   const handleCreate = () => {
-    setCurrentBanner({
-      title: "",
-      subtitle: "",
-      image_url: "",
-      bg_color: "bg-gradient-to-r from-slate-900 to-slate-800",
-      target_url: "",
-      is_active: true,
-      display_order: banners.length + 1,
-    });
+    setCurrentBanner({ title: "", subtitle: "", image_url: "", bg_color: "bg-gradient-to-r from-slate-900 to-slate-800", target_url: "", is_active: true, display_order: banners.length + 1 });
     setIsEditModalOpen(true);
   };
 
-  const handleEdit = (banner: Banner) => {
-    setCurrentBanner(banner);
-    setIsEditModalOpen(true);
-  };
-
-  const handleDeleteClick = (banner: Banner) => {
-    setCurrentBanner(banner);
-    setIsDeleteModalOpen(true);
-  };
+  const handleEdit = (banner: Banner) => { setCurrentBanner(banner); setIsEditModalOpen(true); };
+  const handleDeleteClick = (banner: Banner) => { setCurrentBanner(banner); setIsDeleteModalOpen(true); };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentBanner?.title || !currentBanner?.image_url) return;
-
     setIsSubmitting(true);
     const supabase = createClient();
     if (supabase) {
       const { error } = currentBanner.id
         ? await BannerService.updateBanner(supabase, currentBanner.id, currentBanner)
         : await BannerService.createBanner(supabase, currentBanner);
-
       if (error) {
-        setNotification({
-          isOpen: true,
-          title: "Lỗi",
-          message: error.message,
-          type: "error",
-        });
+        setNotification({ isOpen: true, title: "Lỗi", message: error.message, type: "error" });
       } else {
-        setNotification({
-          isOpen: true,
-          title: "Thành công",
-          message: currentBanner.id ? "Cập nhật banner thành công" : "Thêm banner thành công",
-          type: "success",
-        });
+        setNotification({ isOpen: true, title: "Thành công", message: currentBanner.id ? "Cập nhật banner thành công" : "Thêm banner thành công", type: "success" });
         setIsEditModalOpen(false);
         fetchBanners();
       }
@@ -104,25 +70,14 @@ export default function BannerManager() {
 
   const confirmDelete = async () => {
     if (!currentBanner?.id) return;
-
     setIsSubmitting(true);
     const supabase = createClient();
     if (supabase) {
       const { error } = await BannerService.deleteBanner(supabase, currentBanner.id);
       if (error) {
-        setNotification({
-          isOpen: true,
-          title: "Lỗi khi xóa",
-          message: error.message,
-          type: "error",
-        });
+        setNotification({ isOpen: true, title: "Lỗi khi xóa", message: error.message, type: "error" });
       } else {
-        setNotification({
-          isOpen: true,
-          title: "Thành công",
-          message: "Đã xóa banner thành công",
-          type: "success",
-        });
+        setNotification({ isOpen: true, title: "Thành công", message: "Đã xóa banner thành công", type: "success" });
         setIsDeleteModalOpen(false);
         fetchBanners();
       }
@@ -130,68 +85,34 @@ export default function BannerManager() {
     setIsSubmitting(false);
   };
 
-  const filteredBanners = banners.filter((b) =>
-    b.title.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredBanners = banners.filter((b) => b.title.toLowerCase().includes(searchTerm.toLowerCase()));
 
   return (
-    <div className="space-y-6">
-      {/* Header & Search */}
-      <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
-        <div className="relative w-full md:w-96">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-          <input
-            type="text"
-            placeholder="Tìm kiếm banner..."
-            className="w-full pl-12 pr-4 py-3 rounded-2xl border border-slate-100 bg-white shadow-sm focus:border-primary outline-none transition-all placeholder:text-slate-300 font-bold text-[14px]"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-
-        <button
-          onClick={handleCreate}
-          className="w-full md:w-auto flex items-center justify-center gap-2 bg-primary text-white px-6 py-3 rounded-2xl font-black uppercase tracking-wider shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all text-[13px] cursor-pointer"
-        >
-          <Plus size={18} />
-          Thêm banner
-        </button>
-      </div>
-
-      {/* List */}
-      {loading ? (
-        <div className="flex justify-center py-20">
-          <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-        </div>
-      ) : (
+    <>
+      <AdminManagerShell
+        searchTerm={searchTerm}
+        onSearch={setSearchTerm}
+        searchPlaceholder="Tìm kiếm banner..."
+        onAdd={handleCreate}
+        addLabel="Thêm banner"
+        loading={loading}
+        isEmpty={filteredBanners.length === 0}
+        emptyIcon={<ImageIcon size={48} />}
+        emptyText="Không tìm thấy banner nào"
+      >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {filteredBanners.map((banner) => (
             <div key={banner.id} className="group bg-white rounded-[24px] border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-500 overflow-hidden flex flex-col">
-              {/* Preview Area */}
               <div className={`h-40 relative flex items-center px-8 ${banner.bg_color}`}>
                 <div className="z-10 w-2/3">
                   <h3 className="text-xl font-black text-white line-clamp-1">{banner.title}</h3>
                   <p className="text-[12px] text-white/70 font-medium line-clamp-2">{banner.subtitle}</p>
                 </div>
-                <img 
-                  src={banner.image_url} 
-                  alt={banner.title} 
-                  className="absolute right-4 bottom-0 h-32 object-contain filter drop-shadow-xl z-10 transition-transform group-hover:scale-110"
-                />
+                <img src={banner.image_url} alt={banner.title} className="absolute right-4 bottom-0 h-32 object-contain filter drop-shadow-xl z-10 transition-transform group-hover:scale-110" />
                 <div className="absolute top-4 right-4 z-20">
-                  {banner.is_active ? (
-                    <span className="flex items-center gap-1 bg-green-500/20 backdrop-blur-md text-green-500 px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
-                      <CheckCircle2 size={10} /> Active
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-1 bg-slate-500/20 backdrop-blur-md text-slate-400 px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
-                      <XCircle size={10} /> Inactive
-                    </span>
-                  )}
+                  <StatusBadge active={banner.is_active} />
                 </div>
               </div>
-
-              {/* Action Area */}
               <div className="p-5 flex items-center justify-between bg-white mt-auto">
                 <div className="flex items-center gap-4">
                   <div className="flex flex-col">
@@ -201,147 +122,51 @@ export default function BannerManager() {
                   {banner.target_url && (
                     <div className="flex flex-col">
                       <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Link</span>
-                      <a href={banner.target_url} target="_blank" className="text-primary hover:underline flex items-center gap-1 font-bold text-[12px]">
-                        <ExternalLink size={12} /> View
-                      </a>
+                      <a href={banner.target_url} target="_blank" className="text-primary hover:underline flex items-center gap-1 font-bold text-[12px]"><ExternalLink size={12} /> View</a>
                     </div>
                   )}
                 </div>
-
                 <div className="flex gap-2">
-                  <button
-                    onClick={() => handleEdit(banner)}
-                    className="p-3 rounded-xl bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-all cursor-pointer"
-                  >
-                    <Edit size={16} />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteClick(banner)}
-                    className="p-3 rounded-xl bg-slate-50 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all cursor-pointer"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+                  <button onClick={() => handleEdit(banner)} className="p-3 rounded-xl bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-all cursor-pointer"><Edit size={16} /></button>
+                  <button onClick={() => handleDeleteClick(banner)} className="p-3 rounded-xl bg-slate-50 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all cursor-pointer"><Trash2 size={16} /></button>
                 </div>
               </div>
             </div>
           ))}
         </div>
-      )}
+      </AdminManagerShell>
 
-      {/* No results */}
-      {!loading && filteredBanners.length === 0 && (
-        <div className="text-center py-20 bg-slate-50/50 rounded-[32px] border-2 border-dashed border-slate-100">
-          <ImageIcon className="mx-auto text-slate-200 mb-4" size={48} />
-          <p className="text-slate-400 font-bold">Không tìm thấy banner nào</p>
-        </div>
-      )}
-
-      {/* Edit/Create Modal */}
-      {isEditModalOpen && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setIsEditModalOpen(false)} />
-          <div className="relative w-full max-w-2xl bg-white rounded-[40px] p-10 shadow-2xl animate-in zoom-in duration-300 border border-white overflow-hidden max-h-[90vh] overflow-y-auto">
-            <button
-              onClick={() => setIsEditModalOpen(false)}
-              className="absolute right-8 top-8 text-slate-300 hover:text-slate-600 transition-colors cursor-pointer z-50"
-            >
-              <X size={24} />
-            </button>
-
-            <h2 className="text-2xl font-black text-slate-900 mb-8 tracking-tight">
-              {currentBanner?.id ? "Cập nhật banner" : "Thêm banner mới"}
-            </h2>
-
-            <form onSubmit={handleSave} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-6 md:col-span-2">
-                <AdminInput
-                  label="Tiêu đề chính"
-                  required
-                  value={currentBanner?.title || ""}
-                  onChange={(e) => setCurrentBanner({ ...currentBanner, title: e.target.value })}
-                  placeholder="Ví dụ: iPhone 15 Pro Max"
-                />
-                
-                <div className="space-y-2">
-                  <label className="text-[12px] font-black text-slate-400 uppercase tracking-widest px-1">Tiêu đề phụ (Subtitle)</label>
-                  <textarea
-                    className="w-full p-4 rounded-2xl border border-slate-100 bg-slate-50/50 focus:border-primary focus:bg-white outline-none transition-all font-bold text-[14px] min-h-[80px]"
-                    value={currentBanner?.subtitle || ""}
-                    onChange={(e) => setCurrentBanner({ ...currentBanner, subtitle: e.target.value })}
-                    placeholder="Ví dụ: Titanium siêu bền. Chip A17 Pro đỉnh cao."
-                  />
-                </div>
-              </div>
-
-              <AdminInput
-                label="URL Hình ảnh"
-                required
-                value={currentBanner?.image_url || ""}
-                onChange={(e) => setCurrentBanner({ ...currentBanner, image_url: e.target.value })}
-                placeholder="https://..."
-              />
-
-              <AdminInput
-                label="Màu nền / Gradient Class"
-                value={currentBanner?.bg_color || ""}
-                onChange={(e) => setCurrentBanner({ ...currentBanner, bg_color: e.target.value })}
-                placeholder="bg-gradient-to-r from-..."
-              />
-
-              <AdminInput
-                label="Link điều hướng (URL)"
-                value={currentBanner?.target_url || ""}
-                onChange={(e) => setCurrentBanner({ ...currentBanner, target_url: e.target.value })}
-                placeholder="/product/..."
-              />
-
-              <AdminInput
-                label="Thứ tự hiển thị"
-                type="number"
-                value={currentBanner?.display_order?.toString() || ""}
-                onChange={(e) => setCurrentBanner({ ...currentBanner, display_order: parseInt(e.target.value) || 0 })}
-                placeholder="1"
-              />
-
-              <div className="md:col-span-2 pt-2">
-                 <AdminToggle 
-                    label="Hoạt động"
-                    checked={currentBanner?.is_active || false}
-                    onChange={(checked) => setCurrentBanner({ ...currentBanner, is_active: checked })}
-                 />
-              </div>
-
-              <div className="md:col-span-2 pt-4">
-                <button
-                  disabled={isSubmitting}
-                  className="w-full py-5 rounded-2xl bg-primary text-white font-black text-lg shadow-xl shadow-primary/30 hover:scale-[1.01] active:scale-95 disabled:grayscale transition-all cursor-pointer uppercase tracking-widest"
-                >
-                  {isSubmitting ? "Đang xử lý..." : "Xác nhận lưu"}
-                </button>
-              </div>
-            </form>
+      <AdminActionModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        title={currentBanner?.id ? "Cập nhật banner" : "Thêm banner mới"}
+        maxWidth="max-w-2xl"
+      >
+        <form onSubmit={handleSave} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-6 md:col-span-2">
+            <AdminInput label="Tiêu đề chính" required value={currentBanner?.title || ""} onChange={(e) => setCurrentBanner({ ...currentBanner, title: e.target.value })} placeholder="Ví dụ: iPhone 15 Pro Max" />
+            <div className="space-y-2">
+              <label className="text-[12px] font-black text-slate-400 uppercase tracking-widest px-1">Tiêu đề phụ (Subtitle)</label>
+              <textarea className="w-full p-4 rounded-2xl border border-slate-100 bg-slate-50/50 focus:border-primary focus:bg-white outline-none transition-all font-bold text-[14px] min-h-[80px]" value={currentBanner?.subtitle || ""} onChange={(e) => setCurrentBanner({ ...currentBanner, subtitle: e.target.value })} placeholder="Ví dụ: Titanium siêu bền. Chip A17 Pro đỉnh cao." />
+            </div>
           </div>
-        </div>
-      )}
+          <AdminInput label="URL Hình ảnh" required value={currentBanner?.image_url || ""} onChange={(e) => setCurrentBanner({ ...currentBanner, image_url: e.target.value })} placeholder="https://..." />
+          <AdminInput label="Màu nền / Gradient Class" value={currentBanner?.bg_color || ""} onChange={(e) => setCurrentBanner({ ...currentBanner, bg_color: e.target.value })} placeholder="bg-gradient-to-r from-..." />
+          <AdminInput label="Link điều hướng (URL)" value={currentBanner?.target_url || ""} onChange={(e) => setCurrentBanner({ ...currentBanner, target_url: e.target.value })} placeholder="/product/..." />
+          <AdminInput label="Thứ tự hiển thị" type="number" value={currentBanner?.display_order?.toString() || ""} onChange={(e) => setCurrentBanner({ ...currentBanner, display_order: parseInt(e.target.value) || 0 })} placeholder="1" />
+          <div className="md:col-span-2 pt-2">
+            <AdminToggle label="Hoạt động" checked={currentBanner?.is_active || false} onChange={(checked) => setCurrentBanner({ ...currentBanner, is_active: checked })} />
+          </div>
+          <div className="md:col-span-2 pt-4">
+            <button disabled={isSubmitting} className="w-full py-5 rounded-2xl bg-primary text-white font-black text-lg shadow-xl shadow-primary/30 hover:scale-[1.01] active:scale-95 disabled:grayscale transition-all cursor-pointer uppercase tracking-widest">
+              {isSubmitting ? "Đang xử lý..." : "Xác nhận lưu"}
+            </button>
+          </div>
+        </form>
+      </AdminActionModal>
 
-      <ConfirmationModal
-        isOpen={isDeleteModalOpen}
-        onClose={() => setIsDeleteModalOpen(false)}
-        onConfirm={confirmDelete}
-        title="Xóa banner"
-        message={`Bạn có chắc chắn muốn xóa banner "${currentBanner?.title}"? Hành động này không thể hoàn tác.`}
-        confirmText="Xác nhận xóa"
-        type="danger"
-        loading={isSubmitting}
-      />
-
-      <NotificationModal
-        isOpen={notification.isOpen}
-        onClose={() => setNotification({ ...notification, isOpen: false })}
-        title={notification.title}
-        message={notification.message}
-        type={notification.type}
-      />
-    </div>
+      <ConfirmationModal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} onConfirm={confirmDelete} title="Xóa banner" message={`Bạn có chắc chắn muốn xóa banner "${currentBanner?.title}"? Hành động này không thể hoàn tác.`} confirmText="Xác nhận xóa" type="danger" loading={isSubmitting} />
+      <NotificationModal isOpen={notification.isOpen} onClose={() => setNotification({ ...notification, isOpen: false })} title={notification.title} message={notification.message} type={notification.type} />
+    </>
   );
 }

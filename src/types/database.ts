@@ -14,6 +14,7 @@ export interface Category {
   name: string;
   slug: string;
   description: string | null;
+  image_url: string | null;
 }
 
 export interface ProductImage {

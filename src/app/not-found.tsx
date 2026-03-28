@@ -1,30 +1,26 @@
 import React from "react";
 import Link from "next/link";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
 
 /**
- * Custom 404 page to handle broken carousel links gracefully.
- * This prevents the Router Initialization loop by providing a stable 404 UI.
+ * Custom 404 page.
+ * Header and Footer are now provided by the Root Layout,
+ * ensuring no duplication across different route groups.
  */
 export default function NotFound() {
   return (
-    <div className="flex min-h-screen flex-col">
-      <Header />
-      <main className="flex flex-1 flex-col items-center justify-center p-8 text-center">
-        <h1 className="text-9xl font-black text-slate-200">404</h1>
-        <h2 className="mt-4 text-2xl font-bold text-slate-800">Không tìm thấy trang này</h2>
-        <p className="mt-2 text-slate-500 max-w-md">
-          Opps! Trang không tồn tại.
-        </p>
-        <Link
-          href="/"
-          className="mt-8 rounded-full bg-primary px-8 py-3 font-bold text-white shadow-lg transition-transform hover:scale-105 active:scale-95"
-        >
-          Quay lại trang chủ
-        </Link>
-      </main>
-      <Footer />
-    </div>
+    <main className="flex flex-1 flex-col items-center justify-center p-8 text-center bg-slate-50">
+      <h1 className="text-9xl font-black text-slate-200">404</h1>
+      <h2 className="mt-4 text-2xl font-bold text-slate-800 tracking-tight">Không tìm thấy trang này</h2>
+      <p className="mt-2 text-slate-500 font-medium max-w-md">
+        Opps! Trang không tồn tại hoặc đã bị di dời.
+      </p>
+      <Link
+        href="/"
+        prefetch={false}
+        className="mt-8 rounded-full bg-primary px-10 py-4 font-black text-white shadow-xl shadow-primary/20 transition-all hover:scale-105 hover:shadow-2xl active:scale-95 uppercase tracking-widest text-xs"
+      >
+        Quay lại trang chủ
+      </Link>
+    </main>
   );
 }

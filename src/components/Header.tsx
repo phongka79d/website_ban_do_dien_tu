@@ -56,8 +56,9 @@ export default function Header() {
     return () => subscription.unsubscribe();
   }, [supabase]);
 
-  // Hide header on admin pages (optional, but keep per existing logic)
-  if (pathname?.startsWith("/admin")) {
+  // Hide header on admin and auth pages
+  const isAuthPage = ["/login", "/register", "/forgot-password"].some(p => pathname?.startsWith(p));
+  if (pathname?.startsWith("/admin") || isAuthPage) {
     return null;
   }
 

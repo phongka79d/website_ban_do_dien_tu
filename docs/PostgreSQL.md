@@ -16,7 +16,8 @@ CREATE TABLE categories (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(100) NOT NULL UNIQUE,
     slug VARCHAR(100) NOT NULL UNIQUE,
-    description TEXT
+    description TEXT,
+    image_url TEXT
 );
 
 -- 4. Create Products Table (using JSONB for flexible specs)
@@ -181,3 +182,12 @@ INSERT INTO banners (title, subtitle, image_url, bg_color, target_url, display_o
     '/category/macbook',
     3
 );
+
+-- ==========================================
+-- MIGRATION LOGS
+-- ==========================================
+
+-- 2026-03-28: Thêm trường image_url cho categories
+-- ALTER TABLE categories ADD COLUMN image_url TEXT; 
+-- COMMENT ON COLUMN categories.image_url IS 'URL hình ảnh danh mục';
+

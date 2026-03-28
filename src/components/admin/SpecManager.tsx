@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { COMMON_SPECS, SPEC_VALUE_SUGGESTIONS } from "@/constants/spec-suggestions";
+import { Button } from "../ui/Button";
+import { Plus, X } from "lucide-react";
 
 interface Spec {
   key: string;
@@ -136,24 +138,29 @@ export const SpecManager: React.FC<SpecManagerProps> = ({ specs, onAdd, onRemove
               )}
             </div>
             
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="icon"
               onClick={() => onRemove(index)}
-              className="p-3 text-slate-400 hover:text-red-500 transition-colors cursor-pointer"
+              className="text-slate-400 hover:text-red-500"
             >
-              ✕
-            </button>
+              <X size={16} />
+            </Button>
           </div>
         ))}
       </div>
 
-      <button
+      <Button
         type="button"
+        variant="soft"
+        size="sm"
         onClick={onAdd}
-        className="text-sm font-bold text-primary hover:text-primary-dark transition-colors flex items-center gap-1"
+        leftIcon={<Plus size={14} />}
+        className="font-bold"
       >
-        + Thêm thông số khác
-      </button>
+        Thêm thông số khác
+      </Button>
     </div>
   );
 };
