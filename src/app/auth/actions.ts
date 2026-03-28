@@ -50,34 +50,13 @@ export async function signIn(formData: FormData) {
   const supabase = await createClient();
   if (!supabase) return { error: getAuthMessage("conn-failed") };
 
-  const identifier = formData.get("identifier") as string;
+  const email = formData.get("email") as string;
   const password = formData.get("password") as string;
 
-  const isPhone = /^\+?[0-9]{10,15}$/.test(identifier);
-  let signInResponse;
-
-  if (isPhone) {
-    // Lookup if profile exists with this phone
-    const { data: profileData, error: profileError } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("phone", identifier)
-      .single();
-
-    if (profileError || !profileData) {
-      return { error: getAuthMessage("phone-not-found") };
-    }
-
-    signInResponse = await supabase.auth.signInWithPassword({
-      phone: identifier,
-      password,
-    });
-  } else {
-    signInResponse = await supabase.auth.signInWithPassword({
-      email: identifier,
-      password,
-    });
-  }
+  const signInResponse = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
 
   if (signInResponse.error) {
     return { error: getAuthMessage(signInResponse.error.message) };
@@ -139,5 +118,67 @@ export async function resendOtpCode(email: string) {
     return { error: getAuthMessage(error.message) };
   }
 
+  return { success: true };
+}
+
+export async function requestPasswordReset(formData: FormData) {
+  const supabase = await createClient();
+  if (!supabase) return { error: getAuthMessage("conn-failed") };
+
+  const email = formData.get("email") as string;
+  if (!email) return { error: "Vui lòng nhập Email." };
+
+  // Kiểm tra Email tồn tại (Optionally)
+  const { data: emailExists } = await supabase.rpc("check_email_exists", { email_to_check: email });
+  if (!emailExists) return { error: "Email này chưa được đăng ký trong hệ thống." };
+
+  const { error } = await supabase.auth.resetPasswordForEmail(email);
+  if (error) return { error: getAuthMessage(error.message) };
+
+  return { success: true };
+}
+
+export async function resetPasswordWithOtp(formData: FormData) {
+  const supabase = await createClient();
+  if (!supabase) return { error: getAuthMessage("conn-failed") };
+
+  const email = formData.get("email") as string;
+  const otp = formData.get("otp") as string;
+  const newPassword = formData.get("password") as string;
+
+  if (!email || !otp || !newPassword) return { error: "Thiếu thông tin xác thực." };
+
+  // 1. Xác thực OTP (Type: recovery)
+  const { error: otpError } = await supabase.auth.verifyOtp({
+    email,
+    token: otp,
+    type: "recovery",
+  });
+
+  if (otpError) return { error: "Mã OTP không hợp lệ hoặc đã hết hạn." };
+
+  // 2. Cập nhật Mật khẩu mới
+  const { error: updateError } = await supabase.auth.updateUser({
+    password: newPassword,
+  });
+
+  if (updateError) {
+    // SECURITY FIX: Nếu cập nhật pass lỗi, phải xóa Session đã tạo từ verifyOtp
+    await supabase.auth.signOut();
+    return { error: getAuthMessage(updateError.message) };
+  }
+
+  revalidatePath("/", "layout");
+  return { success: true };
+}
+
+export async function resendRecoveryOtp(email: string) {
+  const supabase = await createClient();
+  if (!supabase) return { error: getAuthMessage("conn-failed") };
+
+  // Dùng resetPasswordForEmail để "gửi lại" mã Recovery
+  const { error } = await supabase.auth.resetPasswordForEmail(email);
+
+  if (error) return { error: getAuthMessage(error.message) };
   return { success: true };
 }

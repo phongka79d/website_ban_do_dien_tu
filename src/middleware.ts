@@ -82,6 +82,13 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // Protect User Profiles
+  if (request.nextUrl.pathname.startsWith("/profile")) {
+    if (!user) {
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+  }
+
   // Auth: Redirect logged-in users away from auth pages
   if (user && (request.nextUrl.pathname === "/login" || request.nextUrl.pathname === "/register")) {
     return NextResponse.redirect(new URL("/", request.url));

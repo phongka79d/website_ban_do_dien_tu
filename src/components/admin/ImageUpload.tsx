@@ -24,14 +24,22 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
 
       {imageUrl ? (
         <div className="relative w-full max-w-sm aspect-video rounded-2xl overflow-hidden border-2 border-primary shadow-xl group">
-          <CldImage
-            src={imageUrl}
-            width={800}
-            height={450}
-            crop="fill"
-            alt="Preview"
-            className="object-cover w-full h-full"
-          />
+          {imageUrl.includes("cloudinary.com") || !imageUrl.startsWith("http") ? (
+            <CldImage
+              src={imageUrl}
+              width={800}
+              height={450}
+              crop="fill"
+              alt="Preview"
+              className="object-cover w-full h-full"
+            />
+          ) : (
+            <img
+              src={imageUrl}
+              alt="Preview"
+              className="object-cover w-full h-full"
+            />
+          )}
           <button
             type="button"
             onClick={onRemove}

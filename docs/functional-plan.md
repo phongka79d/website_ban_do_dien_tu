@@ -17,7 +17,7 @@ Dựa trên cấu trúc hiện tại của dự án (Next.js 16, Supabase, Tailw
 
 ### Quản trị (Admin)
 - [V] **Quản lý Sản phẩm:** CRUD sản phẩm kèm SpecManager cho JSONB (Đã có base).
-- [ ] **Quản lý Banner:** CRUD cho Carousel trang chủ (Đã có base).
+- [V] **Quản lý Banner:** CRUD cho Carousel trang chủ (Đã có base).
 - [ ] **Quản lý Đơn hàng:** Xem và cập nhật trạng thái đơn hàng.
 
 ---

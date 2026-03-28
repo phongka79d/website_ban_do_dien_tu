@@ -11,10 +11,14 @@ const AUTH_MESSAGES: Record<string, string> = {
   "Invalid OTP": "Mã xác thực không chính xác. Vui lòng thử lại.",
   "Too many requests": "Bạn đã thực hiện quá nhiều yêu cầu. Vui lòng thử lại sau ít phút.",
   "Password should contain at least one character": "Mật khẩu phải bao gồm chữ thường, chữ hoa, số và ký tự đặc biệt.",
+  "Password should be at least": "Mật khẩu quá yếu! Yêu cầu tối thiểu 8 ký tự, bao gồm chữ cái in hoa, chữ thường, số và ký tự đặc biệt.",
+  "For security purposes, you can only request this after": "Vui lòng đợi 60 giây trước khi yêu cầu gửi lại mã OTP khác",
+  "email rate limit exceeded": "Hệ thống tạm thời hết hạn mức gửi Email (Quá tải). Vui lòng thử lại sau khoảng 1h nữa.",
+  "Error sending recovery email": "Máy chủ không thể gửi Email OTP. Lỗi cấu hình Máy chủ hoặc Tên người gửi.",
+  "New password should be different from the old password": "Mật khẩu mới phải khác với mật khẩu cũ.",
   "Database error saving new user": "Đã có lỗi xảy ra (69d)",
 
   // Custom Application Errors
-  "phone-not-found": "Không tìm thấy tài khoản với số điện thoại này.",
   "account-blocked": "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ bộ phận CSKH.",
   "email-in-use": "Email này đã được sử dụng. Vui lòng chọn email khác hoặc đăng nhập.",
   "conn-failed": "Kết nối tới hệ thống thất bại. Vui lòng kiểm tra lại mạng.",

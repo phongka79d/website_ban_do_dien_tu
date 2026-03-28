@@ -69,8 +69,8 @@ export default function LoginPage() {
               </label>
               <div className="relative">
                 <input
-                  name="identifier"
-                  type="text"
+                  name="email"
+                  type="email"
                   required
                   placeholder="Email"
                   className="w-full rounded-2xl border border-slate-200 bg-white/50 py-3 pl-11 pr-4 text-sm outline-none transition-all focus:border-primary focus:ring-4 focus:ring-primary/10"
@@ -82,7 +82,7 @@ export default function LoginPage() {
             <div className="space-y-1.5">
               <div className="flex items-center justify-between ml-1">
                 <label className="text-xs font-black uppercase tracking-wider text-slate-500">Mật khẩu</label>
-                <Link href="#" className="text-[10px] font-bold text-primary hover:underline">Quên mật khẩu?</Link>
+                <Link href="/forgot-password" className="text-[10px] font-bold text-primary hover:underline">Quên mật khẩu?</Link>
               </div>
               <div className="relative">
                 <input
