@@ -1,0 +1,100 @@
+import { SupabaseClient } from "@supabase/supabase-js";
+import { Cart, CartItem, Product } from "@/types/database";
+
+export class CartService {
+  /**
+   * Lấy hoặc tạo giỏ hàng cho người dùng
+   */
+  static async getOrCreateCart(supabase: SupabaseClient, userId: string): Promise<string> {
+    const { data, error } = await supabase
+      .from("carts")
+      .upsert({ user_id: userId }, { onConflict: "user_id" })
+      .select("id")
+      .single();
+
+    if (error) {
+      console.error("Error getting/creating cart:", error.message);
+      throw error;
+    }
+    return data.id;
+  }
+
+  /**
+   * Lấy toàn bộ sản phẩm trong giỏ hàng kèm thông tin sản phẩm
+   */
+  static async fetchCartItems(supabase: SupabaseClient, cartId: string): Promise<CartItem[]> {
+    const { data, error } = await supabase
+      .from("cart_items")
+      .select(`
+        *,
+        products (*)
+      `)
+      .eq("cart_id", cartId)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error fetching cart items:", error.message);
+      return [];
+    }
+    return data as CartItem[];
+  }
+
+  /**
+   * Thêm sản phẩm vào giỏ hàng
+   */
+  static async addToCart(
+    supabase: SupabaseClient, 
+    cartId: string, 
+    productId: string, 
+    quantity: number = 1
+  ): Promise<boolean> {
+    // Kiểm tra xem đã có sản phẩm này chưa
+    const { data: existing } = await supabase
+      .from("cart_items")
+      .select("id, quantity")
+      .eq("cart_id", cartId)
+      .eq("product_id", productId)
+      .maybeSingle();
+
+    if (existing) {
+      const { error } = await supabase
+        .from("cart_items")
+        .update({ quantity: existing.quantity + quantity })
+        .eq("id", existing.id);
+      return !error;
+    }
+
+    const { error } = await supabase
+      .from("cart_items")
+      .insert({
+        cart_id: cartId,
+        product_id: productId,
+        quantity
+      });
+    return !error;
+  }
+
+  /**
+   * Cập nhật số lượng sản phẩm
+   */
+  static async updateQuantity(supabase: SupabaseClient, itemId: string, quantity: number): Promise<boolean> {
+    if (quantity <= 0) {
+      const { error } = await supabase.from("cart_items").delete().eq("id", itemId);
+      return !error;
+    }
+
+    const { error } = await supabase
+      .from("cart_items")
+      .update({ quantity })
+      .eq("id", itemId);
+    return !error;
+  }
+
+  /**
+   * Xóa sản phẩm khỏi giỏ hàng
+   */
+  static async removeFromCart(supabase: SupabaseClient, itemId: string): Promise<boolean> {
+    const { error } = await supabase.from("cart_items").delete().eq("id", itemId);
+    return !error;
+  }
+}

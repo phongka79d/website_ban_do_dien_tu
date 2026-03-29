@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-
-
+import ServiceWorkerManager from "@/components/ServiceWorkerManager";
+import { Suspense } from "react";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -18,11 +20,6 @@ export const metadata: Metadata = {
   title: "QuizLM Store | Cửa hàng công nghệ",
   description: "Trải nghiệm mua sắm công nghệ hiện đại phong cách QuizLM",
 };
-
-import ServiceWorkerManager from "@/components/ServiceWorkerManager";
-import { Suspense } from "react";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
 
 export default function RootLayout({
   children,

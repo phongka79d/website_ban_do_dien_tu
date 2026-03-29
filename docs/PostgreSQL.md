@@ -183,11 +183,57 @@ INSERT INTO banners (title, subtitle, image_url, bg_color, target_url, display_o
     3
 );
 
+-- 10. Create Carts Table (One per user)
+CREATE TABLE carts (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE UNIQUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 11. Create Cart Items Table
+CREATE TABLE cart_items (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    cart_id UUID REFERENCES carts(id) ON DELETE CASCADE,
+    product_id UUID REFERENCES products(id) ON DELETE CASCADE,
+    quantity INT NOT NULL CHECK (quantity > 0),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(cart_id, product_id)
+);
+
+-- 12. Row Level Security (RLS)
+ALTER TABLE carts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE cart_items ENABLE ROW LEVEL SECURITY;
+
+-- Policies for Carts
+CREATE POLICY "Users can view their own cart" ON carts 
+    FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert their own cart" ON carts 
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- Policies for Cart Items
+CREATE POLICY "Users can view their own cart items" ON cart_items
+    FOR SELECT USING (
+        cart_id IN (SELECT id FROM carts WHERE user_id = auth.uid())
+    );
+CREATE POLICY "Users can insert their own cart items" ON cart_items
+    FOR INSERT WITH CHECK (
+        cart_id IN (SELECT id FROM carts WHERE user_id = auth.uid())
+    );
+CREATE POLICY "Users can update their own cart items" ON cart_items
+    FOR UPDATE USING (
+        cart_id IN (SELECT id FROM carts WHERE user_id = auth.uid())
+    );
+CREATE POLICY "Users can delete their own cart items" ON cart_items
+    FOR DELETE USING (
+        cart_id IN (SELECT id FROM carts WHERE user_id = auth.uid())
+    );
+
 -- ==========================================
 -- MIGRATION LOGS
 -- ==========================================
 
 -- 2026-03-28: Thêm trường image_url cho categories
--- ALTER TABLE categories ADD COLUMN image_url TEXT; 
--- COMMENT ON COLUMN categories.image_url IS 'URL hình ảnh danh mục';
+-- 2026-03-29: Thêm hệ thống Giỏ hàng (Carts & Cart Items)
 

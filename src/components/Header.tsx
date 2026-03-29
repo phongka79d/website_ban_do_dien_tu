@@ -15,10 +15,12 @@ import {
   Loader2
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
+import { useCartStore } from "@/store/useCartStore";
 import { User as SupabaseUser } from "@supabase/supabase-js";
 import { isAdmin, getUserName } from "@/utils/auth-helpers";
 import { signOut } from "@/app/auth/actions";
 import { useTransition } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 /**
  * Header component 
@@ -30,11 +32,14 @@ export default function Header() {
   const [user, setUser] = React.useState<SupabaseUser | null>(null);
   const [loading, setLoading] = React.useState(true);
   const supabase = createClient();
+  
+  // Cart Store
+  const { getTotalItems, setIsOpen, fetchCart, clearCart } = useCartStore();
 
   const handleSignOut = () => {
     startTransition(async () => {
+      clearCart(); // Xóa sạch store local TRƯỚC khi redirect
       await signOut();
-      router.refresh();
     });
   };
 
@@ -44,17 +49,26 @@ export default function Header() {
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
       setLoading(false);
+      
+      if (user) {
+        fetchCart(user.id);
+      }
     };
     getUser();
 
     // Listen for auth changes
     const { data: { subscription } } = supabase!.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+      const newUser = session?.user ?? null;
+      setUser(newUser);
       setLoading(false);
+      
+      if (newUser) {
+        fetchCart(newUser.id);
+      }
     });
 
     return () => subscription.unsubscribe();
-  }, [supabase]);
+  }, [supabase, fetchCart]);
 
   // Hide header on admin and auth pages
   const isAuthPage = ["/login", "/register", "/forgot-password"].some(p => pathname?.startsWith(p));
@@ -135,13 +149,44 @@ export default function Header() {
             </Link>
           )}
 
-          <button className="relative ml-2 flex flex-col items-center gap-0.5 rounded-xl p-2 text-primary transition-colors hover:bg-primary/10">
-            <ShoppingCart size={24} />
-            <span className="text-[10px] font-bold">Giỏ hàng</span>
-            <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-secondary text-[10px] font-bold text-white ring-2 ring-white">
-              0
-            </span>
-          </button>
+          <div className="flex items-center gap-1">
+            <button 
+              id="cart-icon-target"
+              onClick={() => {
+                if (!user) {
+                  router.push("/login?error=auth_required");
+                } else {
+                  router.push("/cart");
+                }
+              }}
+              className="relative ml-2 flex flex-col items-center gap-0.5 rounded-xl p-2 text-primary transition-colors hover:bg-primary/10"
+            >
+              <motion.div
+                key={getTotalItems()}
+                animate={getTotalItems() > 0 ? {
+                  scale: [1, 1.3, 1],
+                  rotate: [0, -10, 10, 0]
+                } : {}}
+                transition={{ duration: 0.4 }}
+              >
+                <ShoppingCart size={24} />
+              </motion.div>
+              <span className="text-[10px] font-bold">Giỏ hàng</span>
+              <AnimatePresence>
+                {getTotalItems() > 0 && (
+                  <motion.span 
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    exit={{ scale: 0 }}
+                    key="badge"
+                    className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-secondary text-[10px] font-bold text-white ring-2 ring-white"
+                  >
+                    {getTotalItems()}
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </button>
+          </div>
         </div>
 
         {/* Mobile Menu */}
@@ -153,9 +198,12 @@ export default function Header() {
   );
 }
 
-function HeaderAction({ icon, label, subLabel }: { icon: React.ReactNode; label: string; subLabel: string }) {
+function HeaderAction({ icon, label, subLabel, onClick }: { icon: React.ReactNode; label: string; subLabel: string; onClick?: () => void }) {
   return (
-    <button className="flex items-center gap-2 rounded-xl px-3 py-1.5 transition-colors hover:bg-slate-100">
+    <button 
+      onClick={onClick}
+      className="flex items-center gap-2 rounded-xl px-3 py-1.5 transition-colors hover:bg-slate-100"
+    >
       <div className="text-slate-600">{icon}</div>
       <div className="flex flex-col items-start leading-tight">
         <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">{subLabel}</span>

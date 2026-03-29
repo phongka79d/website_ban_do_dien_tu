@@ -3,7 +3,8 @@ import { ProductService } from "@/services/productService";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ProductImage } from "@/components/common/ProductImage";
-import { ChevronRight, ArrowLeft, ShoppingBag, Truck, ShieldCheck } from "lucide-react";
+import { ChevronRight, Truck, ShieldCheck } from "lucide-react";
+import { AddToCartButton } from "@/components/cart/AddToCartButton";
 
 export default async function ProductDetail(props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
@@ -110,13 +111,11 @@ export default async function ProductDetail(props: { params: Promise<{ id: strin
 
               {/* Action Block */}
               <div className="mt-auto space-y-4 pt-8">
-                <button
-                  disabled={product.stock_quantity === 0}
-                  className="w-full py-5 rounded-[20px] bg-slate-900 text-white font-black text-[15px] shadow-xl shadow-slate-900/20 hover:scale-[1.02] hover:-translate-y-1 hover:shadow-2xl hover:bg-primary active:scale-[0.98] transition-all uppercase tracking-[2px] flex items-center justify-center gap-3 disabled:opacity-50 disabled:grayscale disabled:pointer-events-none"
-                >
-                  <ShoppingBag className="w-5 h-5" />
-                  {product.stock_quantity === 0 ? "Tạm hết hàng" : "Mua ngay"}
-                </button>
+                <AddToCartButton 
+                  product={product} 
+                  className="w-full py-8 text-[15px]" 
+                  label="Mua ngay"
+                />
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex items-center gap-3 p-4 rounded-2xl bg-slate-50 border border-slate-100">
