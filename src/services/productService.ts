@@ -43,7 +43,10 @@ export const ProductService = {
       .single();
 
     if (error) {
-      console.error(`Error fetching product ${id}:`, error);
+      // PGRST116: The query returned 0 rows (Normal case when product id doesn't exist)
+      if (error.code === "PGRST116") return null;
+      
+      console.error(`Error fetching product ${id}:`, error.message);
       return null;
     }
 

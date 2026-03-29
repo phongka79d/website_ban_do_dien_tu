@@ -13,6 +13,7 @@ import ConfirmationModal from "@/components/common/ConfirmationModal";
 import { useRouter } from "next/navigation";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
+import RichTextEditor from "./RichTextEditor";
 
 interface ProductFormProps {
   initialData?: Product;
@@ -114,16 +115,11 @@ export default function ProductForm({ initialData }: ProductFormProps) {
                     onChange={(e) => updateField("promotion_text", e.target.value)}
                   />
                 </div>
-                <div className="space-y-2 pt-2">
-                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Mô tả chi tiết sản phẩm (Description)</label>
-                  <textarea
-                    rows={8}
-                    placeholder="Nhập giới thiệu, đánh giá chi tiết về sản phẩm (hỗ trợ nhập mã HTML cơ bản)..."
-                    className="w-full p-5 rounded-2xl border border-slate-100 focus:border-primary outline-none transition-all bg-slate-50/50 focus:bg-white text-[14px] font-medium leading-relaxed"
-                    value={(formData as any).description}
-                    onChange={(e) => updateField("description", e.target.value)}
-                  />
-                </div>
+                <RichTextEditor
+                  label="Mô tả chi tiết sản phẩm (Description)"
+                  value={(formData as any).description || ""}
+                  onChange={(content) => updateField("description", content)}
+                />
               </div>
             </div>
           </Card>
