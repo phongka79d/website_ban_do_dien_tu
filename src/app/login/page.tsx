@@ -9,29 +9,42 @@ import AuthCard from "@/components/auth/AuthCard";
 import AuthInput from "@/components/auth/AuthInput";
 import { Button } from "@/components/ui/Button";
 
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { loginSchema, LoginFormData } from "@/lib/validations/auth";
+
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [globalError, setGlobalError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const searchParams = useSearchParams();
   const errorParam = searchParams.get("error");
 
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+  });
+
   React.useEffect(() => {
     if (errorParam === "blocked") {
-      setError("Tài khoản của bạn đã bị khóa. Vui lòng liên hệ bộ phận CSKH.");
+      setGlobalError("Tài khoản của bạn đã bị khóa. Vui lòng liên hệ bộ phận CSKH.");
     }
   }, [errorParam]);
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function onSubmit(data: LoginFormData) {
     setLoading(true);
-    setError(null);
+    setGlobalError(null);
 
-    const formData = new FormData(event.currentTarget);
+    const formData = new FormData();
+    Object.entries(data).forEach(([key, value]) => formData.append(key, value));
+    
     const result = await signIn(formData);
 
     if (result?.error) {
-      setError(result.error);
+      setGlobalError(result.error);
       setLoading(false);
     } else {
       window.location.href = "/";
@@ -49,19 +62,19 @@ export default function LoginPage() {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
-        {error && (
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+        {globalError && (
           <div className="rounded-xl bg-red-50 p-4 text-xs font-medium text-red-600 border border-red-100 italic">
-            {error}
+            {globalError}
           </div>
         )}
 
         <AuthInput
           label="Email"
           icon={<Mail size={18} />}
-          name="email"
+          {...register("email")}
+          error={errors.email?.message}
           type="email"
-          required
           placeholder="Email"
         />
 
@@ -82,9 +95,9 @@ export default function LoginPage() {
               {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
           }
-          name="password"
+          {...register("password")}
+          error={errors.password?.message}
           type={showPassword ? "text" : "password"}
-          required
           placeholder="••••••••"
         />
 
@@ -108,3 +121,4 @@ export default function LoginPage() {
     </AuthCard>
   );
 }
+

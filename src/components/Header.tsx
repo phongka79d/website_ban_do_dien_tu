@@ -16,7 +16,9 @@ import {
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { useCartStore } from "@/store/useCartStore";
-import { User as SupabaseUser } from "@supabase/supabase-js";
+import { useWishlistStore } from "@/store/useWishlistStore";
+import { User as SupabaseUser, Session } from "@supabase/supabase-js";
+import { Heart } from "lucide-react";
 import { isAdmin, getUserName } from "@/utils/auth-helpers";
 import { signOut } from "@/app/auth/actions";
 import { useTransition } from "react";
@@ -31,14 +33,17 @@ export default function Header() {
   const [isPending, startTransition] = useTransition();
   const [user, setUser] = React.useState<SupabaseUser | null>(null);
   const [loading, setLoading] = React.useState(true);
+  const [hasMounted, setHasMounted] = React.useState(false);
   const supabase = createClient();
   
-  // Cart Store
-  const { getTotalItems, setIsOpen, fetchCart, clearCart } = useCartStore();
+  // Stores
+  const { getTotalItems, fetchCart, clearCart } = useCartStore();
+  const { items: wishlistItems, fetchWishlist, clearWishlist } = useWishlistStore();
 
   const handleSignOut = () => {
     startTransition(async () => {
-      clearCart(); // Xóa sạch store local TRƯỚC khi redirect
+      clearCart();
+      clearWishlist();
       await signOut();
     });
   };
@@ -52,6 +57,7 @@ export default function Header() {
       
       if (user) {
         fetchCart(user.id);
+        fetchWishlist(user.id);
       }
     };
     getUser();
@@ -64,11 +70,16 @@ export default function Header() {
       
       if (newUser) {
         fetchCart(newUser.id);
+        fetchWishlist(newUser.id);
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [supabase, fetchCart]);
+  }, [supabase, fetchCart, fetchWishlist]);
+
+  React.useEffect(() => {
+    setHasMounted(true);
+  }, []);
 
   // Hide header on admin and auth pages
   const isAuthPage = ["/login", "/register", "/forgot-password"].some(p => pathname?.startsWith(p));
@@ -103,12 +114,18 @@ export default function Header() {
         {/* Actions */}
         <div className="hidden items-center gap-1 md:flex">
           <HeaderAction icon={<MapPin size={20} />} label="Cửa hàng" subLabel="Gần bạn" />
-          <HeaderAction icon={<Box size={20} />} label="Đơn hàng" subLabel="Tra cứu" />
+          <HeaderAction 
+            href="/track-order"
+            icon={<Box size={20} />} 
+            label="Đơn hàng" 
+            subLabel="Tra cứu" 
+          />
 
           {!loading && user ? (
             <div className="flex items-center gap-1">
               <div className="group relative">
                 <HeaderAction
+                  id="user-menu-target"
                   icon={<User size={20} className="text-primary" />}
                   label={getUserName(user)}
                   subLabel="Xin chào"
@@ -121,6 +138,13 @@ export default function Header() {
                     >
                       <User size={18} />
                       Thông tin cá nhân
+                    </Link>
+                    <Link
+                      href="/wishlist"
+                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-50"
+                    >
+                      <Heart size={18} className="text-red-500" />
+                      Yêu thích
                     </Link>
                     {isAdmin(user) && (
                       <Link
@@ -149,6 +173,7 @@ export default function Header() {
             </Link>
           )}
 
+
           <div className="flex items-center gap-1">
             <button 
               id="cart-icon-target"
@@ -162,7 +187,7 @@ export default function Header() {
               className="relative ml-2 flex flex-col items-center gap-0.5 rounded-xl p-2 text-primary transition-colors hover:bg-primary/10"
             >
               <motion.div
-                key={getTotalItems()}
+                key={hasMounted ? getTotalItems() : 0}
                 animate={getTotalItems() > 0 ? {
                   scale: [1, 1.3, 1],
                   rotate: [0, -10, 10, 0]
@@ -173,7 +198,7 @@ export default function Header() {
               </motion.div>
               <span className="text-[10px] font-bold">Giỏ hàng</span>
               <AnimatePresence>
-                {getTotalItems() > 0 && (
+                {hasMounted && getTotalItems() > 0 && (
                   <motion.span 
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
@@ -198,17 +223,34 @@ export default function Header() {
   );
 }
 
-function HeaderAction({ icon, label, subLabel, onClick }: { icon: React.ReactNode; label: string; subLabel: string; onClick?: () => void }) {
-  return (
-    <button 
-      onClick={onClick}
-      className="flex items-center gap-2 rounded-xl px-3 py-1.5 transition-colors hover:bg-slate-100"
-    >
+function HeaderAction({ id, icon, label, subLabel, onClick, href }: { id?: string; icon: React.ReactNode; label: string; subLabel: string; onClick?: () => void; href?: string }) {
+  const content = (
+    <>
       <div className="text-slate-600">{icon}</div>
       <div className="flex flex-col items-start leading-tight">
         <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">{subLabel}</span>
         <span className="text-xs font-bold text-slate-800">{label}</span>
       </div>
+    </>
+  );
+
+  const className = "flex items-center gap-2 rounded-xl px-3 py-1.5 transition-colors hover:bg-slate-100";
+
+  if (href) {
+    return (
+      <Link href={href} id={id} className={className}>
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <button 
+      id={id}
+      onClick={onClick}
+      className={className}
+    >
+      {content}
     </button>
   );
 }

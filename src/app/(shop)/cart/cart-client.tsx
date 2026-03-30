@@ -121,9 +121,11 @@ export default function CartClient() {
                 </div>
               </div>
 
-              <Button size="lg" className="w-full rounded-2xl h-14 text-base font-black group">
-                Thanh toán
-              </Button>
+              <Link href="/checkout" className="block w-full">
+                <Button size="lg" className="w-full rounded-2xl h-14 text-base font-black" rightIcon={<ArrowRight size={20} />}>
+                  Thanh toán
+                </Button>
+              </Link>
 
               <div className="mt-6">
                 <Link href="/products" className="text-sm text-slate-500 hover:text-primary transition-colors flex items-center justify-center gap-2">

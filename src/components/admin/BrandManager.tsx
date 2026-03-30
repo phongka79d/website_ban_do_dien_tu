@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { ProductService } from "@/services/productService";
 import { Brand } from "@/types/database";
-import { Edit, Trash2, Tags } from "lucide-react";
+import { Edit, Trash2, Tags, Eye } from "lucide-react";
 import ConfirmationModal from "@/components/common/ConfirmationModal";
 import NotificationModal from "@/components/common/NotificationModal";
 import { AdminInput } from "./AdminInput";
@@ -14,6 +14,9 @@ import AdminManagerShell from "./AdminManagerShell";
 import AdminActionModal from "./AdminActionModal";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { brandSchema, BrandFormData } from "@/lib/validations/brand";
 
 export default function BrandManager() {
   const [brands, setBrands] = useState<Brand[]>([]);
@@ -22,18 +25,30 @@ export default function BrandManager() {
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [currentBrand, setCurrentBrand] = useState<Partial<Brand> | null>(null);
+  const [currentBrand, setCurrentBrand] = useState<Brand | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [notification, setNotification] = useState<{
     isOpen: boolean; title: string; message: string; type: "success" | "error";
   }>({ isOpen: false, title: "", message: "", type: "success" });
 
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    reset,
+    formState: { errors },
+  } = useForm<BrandFormData>({
+    resolver: zodResolver(brandSchema),
+  });
+
   const fetchBrands = async () => {
     setLoading(true);
     const supabase = createClient();
     if (supabase) {
-      const data = await ProductService.getBrands(supabase);
+      // Admin sees ALL brands
+      const data = await ProductService.getBrands(supabase, false);
       setBrands(data);
     }
     setLoading(false);
@@ -41,23 +56,58 @@ export default function BrandManager() {
 
   useEffect(() => { fetchBrands(); }, []);
 
-  const handleCreate = () => { setCurrentBrand({ name: "", logo_url: "" }); setIsEditModalOpen(true); };
-  const handleEdit = (brand: Brand) => { setCurrentBrand(brand); setIsEditModalOpen(true); };
-  const handleDeleteClick = (brand: Brand) => { setCurrentBrand(brand); setIsDeleteModalOpen(true); };
+  const handleCreate = () => {
+    reset({ name: "", logo_url: "" });
+    setCurrentBrand(null);
+    setIsEditModalOpen(true);
+  };
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!currentBrand?.name) return;
+  const handleEdit = (brand: Brand) => {
+    setCurrentBrand(brand);
+    reset({
+      name: brand.name,
+      logo_url: brand.logo_url || "",
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleDeleteClick = (brand: Brand) => {
+    setCurrentBrand(brand);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleReactivate = async (id: string, name: string) => {
     setIsSubmitting(true);
     const supabase = createClient();
     if (supabase) {
-      const { error } = currentBrand.id
-        ? await ProductService.updateBrand(supabase, currentBrand.id, currentBrand)
-        : await ProductService.createBrand(supabase, currentBrand);
+      const { error } = await ProductService.reactivateBrand(supabase, id);
+      if (error) {
+        setNotification({ isOpen: true, title: "Lỗi phục hồi", message: error.message, type: "error" });
+      } else {
+        setNotification({ isOpen: true, title: "Thành công", message: `Đã hiển thị lại thương hiệu "${name}"`, type: "success" });
+        fetchBrands();
+      }
+    }
+    setIsSubmitting(false);
+  };
+
+  const onSave = async (data: BrandFormData) => {
+    setIsSubmitting(true);
+    const supabase = createClient();
+    if (supabase) {
+      const { error } = currentBrand?.id
+        ? await ProductService.updateBrand(supabase, currentBrand.id, data)
+        : await ProductService.createBrand(supabase, data);
+
       if (error) {
         setNotification({ isOpen: true, title: "Lỗi", message: error.message, type: "error" });
       } else {
-        setNotification({ isOpen: true, title: "Thành công", message: currentBrand.id ? "Cập nhật thương hiệu thành công" : "Thêm thương hiệu thành công", type: "success" });
+        setNotification({
+          isOpen: true,
+          title: "Thành công",
+          message: currentBrand?.id ? "Cập nhật thương hiệu thành công" : "Thêm thương hiệu thành công",
+          type: "success"
+        });
         setIsEditModalOpen(false);
         fetchBrands();
       }
@@ -70,17 +120,33 @@ export default function BrandManager() {
     setIsSubmitting(true);
     const supabase = createClient();
     if (supabase) {
-      const { error } = await ProductService.deleteBrand(supabase, currentBrand.id);
-      if (error) {
-        setNotification({ isOpen: true, title: "Lỗi khi xóa", message: error.message, type: "error" });
+      const { success, type, error } = await ProductService.safeDeleteBrand(supabase, currentBrand.id);
+      
+      if (!success) {
+        setNotification({ isOpen: true, title: "Lỗi xử lý", message: error?.message || "Không thể thực hiện hành động này.", type: "error" });
       } else {
-        setNotification({ isOpen: true, title: "Thành công", message: "Đã xóa thương hiệu thành công", type: "success" });
+        // --- Cloudinary Cleanup ONLY for Hard Delete ---
+        if (type === 'hard' && currentBrand.logo_url && !currentBrand.logo_url.startsWith("http") && !currentBrand.logo_url.startsWith("/")) {
+          fetch("/api/cloudinary/delete", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ publicIds: [currentBrand.logo_url] }),
+          }).catch(err => console.error("Cloudinary Cleanup failed:", err));
+        }
+
+        const successMessage = type === 'hard' 
+          ? "Đã xóa vĩnh viễn thương hiệu và các sản phẩm liên quan." 
+          : "Thương hiệu và các sản phẩm liên quan đã được ẩn đi để bảo vệ dữ liệu đơn hàng.";
+
+        setNotification({ isOpen: true, title: "Thành công", message: successMessage, type: "success" });
         setIsDeleteModalOpen(false);
         fetchBrands();
       }
     }
     setIsSubmitting(false);
   };
+
+  const brandLogoUrl = watch("logo_url");
 
   const filteredBrands = brands.filter((b) => b.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
@@ -108,7 +174,7 @@ export default function BrandManager() {
             >
               <div className="absolute top-0 right-0 w-24 h-24 bg-slate-50 rounded-bl-[40px] -z-0 group-hover:bg-primary/5 transition-colors" />
               <div className="relative z-10">
-                <div className="w-16 h-16 rounded-2xl bg-white border border-slate-100 flex items-center justify-center overflow-hidden mb-4 group-hover:shadow-lg group-hover:border-primary/20 transition-all">
+                <div className="relative w-16 h-16 rounded-2xl bg-white border border-slate-100 flex items-center justify-center overflow-hidden mb-4 group-hover:shadow-lg group-hover:border-primary/20 transition-all">
                   {brand.logo_url ? (
                     <ProductImage src={brand.logo_url} alt={brand.name} width={64} height={64} className="object-contain p-2" />
                   ) : (
@@ -116,25 +182,42 @@ export default function BrandManager() {
                       <span className="font-black text-2xl uppercase">{brand.name.charAt(0)}</span>
                     </div>
                   )}
+                  {!brand.is_active && (
+                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-[2px] flex items-center justify-center">
+                      <span className="text-[8px] font-black text-white uppercase tracking-tighter">Đã ẩn</span>
+                    </div>
+                  )}
                 </div>
                 <h3 className="font-black text-slate-800 text-[18px] mb-1 group-hover:text-primary transition-colors">{brand.name}</h3>
                 <div className="flex items-center gap-2 mb-6">
                   <span className="px-2 py-0.5 rounded-md bg-slate-50 text-[10px] font-bold text-slate-400 uppercase tracking-tighter">ID: {brand.id.slice(0, 4)}...{brand.id.slice(-4)}</span>
                 </div>
-                <div className="flex gap-2">
-                  <Button 
-                    variant="soft" 
-                    size="sm" 
-                    className="flex-1"
+                <div className="flex gap-2 mt-auto">
+                  <Button
+                    variant="light"
+                    radius="xl"
+                    className="flex-1 py-2.5 text-[12px] h-auto"
                     onClick={() => handleEdit(brand)}
                     leftIcon={<Edit size={14} />}
                   >
-                    Sửa
+                    SỬA
                   </Button>
-                  <Button 
-                    variant="soft" 
-                    size="sm" 
-                    className="p-2.5 hover:bg-red-50 hover:text-red-500"
+                  
+                  {!brand.is_active ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleReactivate(brand.id, brand.name)}
+                      className="w-12 bg-emerald-50 text-emerald-500 hover:bg-emerald-100 rounded-xl h-auto py-2.5"
+                    >
+                      <Eye size={14} />
+                    </Button>
+                  ) : null}
+
+                  <Button
+                    variant="lightDanger"
+                    radius="xl"
+                    className="p-2.5 h-auto w-auto"
                     onClick={() => handleDeleteClick(brand)}
                   >
                     <Trash2 size={14} />
@@ -151,24 +234,30 @@ export default function BrandManager() {
         onClose={() => setIsEditModalOpen(false)}
         title={currentBrand?.id ? "Cập nhật thương hiệu" : "Thêm thương hiệu mới"}
       >
-        <form onSubmit={handleSave} className="space-y-6">
-          <AdminInput label="Tên thương hiệu" required value={currentBrand?.name || ""} onChange={(e) => setCurrentBrand({ ...currentBrand, name: e.target.value })} placeholder="Ví dụ: Apple, Samsung..." />
+        <form onSubmit={handleSubmit(onSave)} className="space-y-6">
+          <AdminInput 
+            label="Tên thương hiệu" 
+            required 
+            {...register("name")} 
+            error={errors.name?.message}
+            placeholder="Ví dụ: Apple, Samsung..." 
+          />
           
           <div className="space-y-4">
             <ImageUpload 
               label="Logo Thương hiệu (Tải lên)"
-              imageUrl={currentBrand?.logo_url || ""}
+              imageUrl={brandLogoUrl || ""}
               categoryFolder="web_ban_do_dien_tu/brands"
-              onSuccess={(result) => setCurrentBrand({ ...currentBrand, logo_url: (result.info as any).public_id })}
+              onSuccess={(result) => setValue("logo_url", (result.info as any).public_id)}
               onClose={() => {}}
-              onRemove={() => setCurrentBrand({ ...currentBrand, logo_url: "" })}
+              onRemove={() => setValue("logo_url", "")}
             />
+            {errors.logo_url && <p className="text-[10px] font-bold text-rose-500">{errors.logo_url.message}</p>}
             
             <div className="pt-2">
               <AdminInput 
                 label="Hoặc dán Link ảnh thủ công" 
-                value={currentBrand?.logo_url || ""} 
-                onChange={(e) => setCurrentBrand({ ...currentBrand, logo_url: e.target.value })} 
+                {...register("logo_url")}
                 placeholder="Ví dụ: apple_logo_id hoặc https://..." 
               />
             </div>
@@ -191,3 +280,5 @@ export default function BrandManager() {
     </>
   );
 }
+
+

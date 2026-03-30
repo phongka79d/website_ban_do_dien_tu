@@ -1,11 +1,15 @@
 "use client";
 
+import React, { useState, useEffect } from "react";
 import { Star, Heart } from "lucide-react";
 import { Product } from "@/types/database";
 import { ProductImage } from "./common/ProductImage";
 import Link from "next/link";
 import { Card } from "./ui/Card";
 import { Button } from "./ui/Button";
+import { useWishlistStore } from "@/store/useWishlistStore";
+import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface ProductCardProps {
   product: Product;
@@ -15,7 +19,18 @@ interface ProductCardProps {
  * Refined ProductCard component to strictly match the style.
  */
 export default function ProductCard({ product }: ProductCardProps) {
+  const router = useRouter();
+  const { isInWishlist, toggleWishlist, userId } = useWishlistStore();
+  const [hasMounted, setHasMounted] = useState(false);
+  const [isAnimating, setIsAnimating] = React.useState(false);
+  const heartRef = React.useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
+
   const {
+    id,
     name,
     price,
     original_price,
@@ -27,11 +42,33 @@ export default function ProductCard({ product }: ProductCardProps) {
     rating,
   } = product;
 
+  // Tránh Hydration Mismatch bằng cách chỉ lấy trạng thái thật sau khi mount xong
+  const isWishlisted = hasMounted ? isInWishlist(id) : false;
+
   // Get first 3 tech specs for tags
   const specTags = specs ? Object.entries(specs).slice(0, 3) : [];
 
+  const handleToggleWishlist = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!userId) {
+      router.push("/login?error=auth_required");
+      return;
+    }
+
+    const wasWishlisted = isWishlisted;
+    await toggleWishlist(product);
+
+    // If adding to wishlist, trigger fly animation
+    if (!wasWishlisted) {
+      setIsAnimating(true);
+      setTimeout(() => setIsAnimating(false), 800);
+    }
+  };
+
   return (
-    <div className="group h-full">
+    <div className="group h-full relative">
       <Card
         variant="elevated"
         radius="xl"
@@ -120,18 +157,44 @@ export default function ProductCard({ product }: ProductCardProps) {
 
           <div className="flex items-center gap-1 overflow-hidden">
             <Button
+              ref={heartRef}
               variant="ghost"
               size="sm"
-              onClick={(e) => { e.preventDefault(); e.stopPropagation(); /* TODO: Handle Favorite logic */ }}
-              leftIcon={<Heart size={14} className="text-[#4486e1]" />}
-              className="text-[#4486e1] font-bold text-[10px] h-8 px-2 min-w-0"
+              onClick={handleToggleWishlist}
+              leftIcon={<Heart size={14} className={isWishlisted ? "fill-red-500 text-red-500" : "text-[#4486e1]"} />}
+              className={`${isWishlisted ? "text-red-500" : "text-[#4486e1]"} font-bold text-[10px] h-8 px-2 min-w-0`}
             >
-              <span className="hidden sm:inline">Yêu thích</span>
+              <span className="hidden sm:inline">{isWishlisted ? "Đã thích" : "Yêu thích"}</span>
             </Button>
-
           </div>
         </div>
       </Card>
+
+      {/* Fly Animation Heart */}
+      <AnimatePresence>
+        {isAnimating && (
+          <motion.div
+            initial={{ 
+              position: "fixed",
+              left: heartRef.current?.getBoundingClientRect().left,
+              top: heartRef.current?.getBoundingClientRect().top,
+              scale: 1,
+              opacity: 1,
+              zIndex: 9999
+            }}
+            animate={{ 
+              left: document.getElementById("user-menu-target")?.getBoundingClientRect().left || "50%",
+              top: document.getElementById("user-menu-target")?.getBoundingClientRect().top || 20,
+              scale: 0.3,
+              opacity: 0,
+            }}
+            transition={{ duration: 0.8, ease: "easeInOut" }}
+            className="pointer-events-none"
+          >
+            <Heart size={24} className="fill-red-500 text-red-500" />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

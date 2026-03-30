@@ -21,7 +21,7 @@ interface AuthInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
  * AuthInput — Input field chuẩn dùng trong các trang Auth.
  * Bao gồm: label, icon trái, slot phải (password toggle), error message.
  */
-export default function AuthInput({
+const AuthInput = React.forwardRef<HTMLInputElement, AuthInputProps>(({
   label,
   icon,
   rightSlot,
@@ -30,7 +30,7 @@ export default function AuthInput({
   error,
   className,
   ...props
-}: AuthInputProps) {
+}, ref) => {
   const hasLeftIcon = Boolean(icon);
   const hasRightSlot = Boolean(rightSlot);
 
@@ -43,19 +43,22 @@ export default function AuthInput({
   const paddingRight = hasRightSlot ? "pr-11" : "pr-4";
 
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-1.5 w-full">
       {/* Label row */}
-      <div className={`flex items-center ${labelSlot ? "justify-between" : ""} ml-1`}>
-        <label className="text-xs font-black uppercase tracking-wider text-slate-500">
-          {label}
-        </label>
-        {labelSlot && <span className="text-[10px]">{labelSlot}</span>}
-      </div>
+      {label && (
+        <div className={`flex items-center ${labelSlot ? "justify-between" : ""} ml-1`}>
+          <label className="text-xs font-black uppercase tracking-wider text-slate-500">
+            {label}
+          </label>
+          {labelSlot && <span className="text-[10px]">{labelSlot}</span>}
+        </div>
+      )}
 
       {/* Input wrapper */}
       <div className="relative">
         <input
           {...props}
+          ref={ref}
           className={`w-full rounded-2xl border border-slate-200 bg-white/50 py-3.5 text-sm outline-none transition-all focus:ring-4 ${paddingLeft} ${paddingRight} ${focusCls} ${error ? "border-red-300 focus:border-red-400 focus:ring-red-100" : ""} ${className ?? ""}`}
         />
         {/* Left icon */}
@@ -78,4 +81,9 @@ export default function AuthInput({
       )}
     </div>
   );
-}
+});
+
+AuthInput.displayName = "AuthInput";
+
+export default AuthInput;
+

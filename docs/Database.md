@@ -85,6 +85,58 @@ Extended user information, synchronized with Supabase Auth.
 | `role` | VARCHAR(20) | User role: `user` or `admin` |
 | `updated_at` | TIMESTAMPTZ | Last profile update |
 
+### 2.7 `carts`
+Stores active shopping sessions for authenticated users.
+| Column | Type | Description |
+| :--- | :--- | :--- |
+| `id` | UUID (PK) | Unique identifier |
+| `user_id` | UUID (FK) | Reference to `auth.users(id)` |
+| `created_at` | TIMESTAMPTZ | Creation timestamp |
+| `updated_at` | TIMESTAMPTZ | Last activity timestamp |
+
+### 2.8 `cart_items`
+Maps products to user carts with selected quantities.
+| Column | Type | Description |
+| :--- | :--- | :--- |
+| `id` | UUID (PK) | Unique identifier |
+| `cart_id` | UUID (FK) | Reference to `carts.id` |
+| `product_id` | UUID (FK) | Reference to `products.id` |
+| `quantity` | INT | Number of units added |
+| `updated_at` | TIMESTAMPTZ | Last item update |
+
+### 2.9 `wishlist_items`
+Stores products saved as favorites by users.
+| Column | Type | Description |
+| :--- | :--- | :--- |
+| `id` | UUID (PK) | Unique identifier |
+| `user_id` | UUID (FK) | Foreign Key to `auth.users` |
+| `product_id` | UUID (FK) | Reference to `products.id` |
+| `created_at` | TIMESTAMPTZ | Creation timestamp |
+
+### 2.10 `orders`
+The central table for tracking successful purchases.
+| Column | Type | Description |
+| :--- | :--- | :--- |
+| `id` | UUID (PK) | Unique identifier |
+| `user_id` | UUID (FK) | Reference to `auth.users(id)` |
+| `status` | TEXT | `pending`, `processing`, `shipped`, `delivered`, `cancelled` |
+| `total_amount` | BIGINT | Total order value |
+| `shipping_address` | TEXT | Full delivery address |
+| `phone_number` | TEXT | Contact number for delivery |
+| `payment_method` | TEXT | `COD`, `Credit Card`, etc. |
+| `created_at` | TIMESTAMPTZ | Order time |
+| `updated_at` | TIMESTAMPTZ | Last status update |
+
+### 2.11 `order_items`
+Snapshot of products at the time of purchase.
+| Column | Type | Description |
+| :--- | :--- | :--- |
+| `id` | UUID (PK) | Unique identifier |
+| `order_id` | UUID (FK) | Reference to `orders.id` |
+| `product_id` | UUID (FK) | Reference to `products.id` (set null if product deleted) |
+| `quantity` | INT | Number of units purchased |
+| `price_at_purchase` | BIGINT | Unit price at the time of checkout |
+
 ## 3. JSONB Specification Examples
 The `specs` column allows for category-specific data without schema changes.
 

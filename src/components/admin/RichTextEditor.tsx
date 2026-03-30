@@ -10,10 +10,6 @@ import {
   Bold,
   Italic,
   Underline as UnderlineIcon,
-  List,
-  ListOrdered,
-  Heading1,
-  Heading2,
   Link as LinkIcon,
   Unlink,
   Undo,
@@ -23,7 +19,7 @@ import {
   Type as FontSizeIcon,
   ChevronDown
 } from "lucide-react";
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 
 // --- CUSTOM FONT SIZE EXTENSION ---
 const FontSize = Extension.create({
@@ -130,7 +126,7 @@ const MenuBar = ({ editor }: { editor: any }) => {
         icon={<UnderlineIcon size={16} />}
         title="Gạch chân"
       />
-      
+
       <div className="w-px h-6 bg-slate-200 mx-1" />
 
       {/* Font Size Dropdown */}
@@ -141,9 +137,8 @@ const MenuBar = ({ editor }: { editor: any }) => {
             setShowFontSizePicker(!showFontSizePicker);
             setShowColorPicker(false);
           }}
-          className={`h-8 px-2 rounded-lg transition-all flex items-center gap-1 text-[12px] font-bold ${
-            showFontSizePicker ? "bg-white shadow-sm ring-1 ring-slate-200" : "text-slate-600 hover:bg-white hover:shadow-sm"
-          }`}
+          className={`h-8 px-2 rounded-lg transition-all flex items-center gap-1 text-[12px] font-bold ${showFontSizePicker ? "bg-white shadow-sm ring-1 ring-slate-200" : "text-slate-600 hover:bg-white hover:shadow-sm"
+            }`}
           title="Cỡ chữ"
         >
           <FontSizeIcon size={16} />
@@ -161,24 +156,23 @@ const MenuBar = ({ editor }: { editor: any }) => {
                   (editor as any).chain().focus().setFontSize(size).run();
                   setShowFontSizePicker(false);
                 }}
-                className={`w-full text-left px-3 py-1.5 rounded-md text-[12px] font-medium hover:bg-slate-50 transition-colors flex justify-between items-center ${
-                  editor.getAttributes("textStyle").fontSize === size ? "text-primary bg-primary/5" : "text-slate-600"
-                }`}
+                className={`w-full text-left px-3 py-1.5 rounded-md text-[12px] font-medium hover:bg-slate-50 transition-colors flex justify-between items-center ${editor.getAttributes("textStyle").fontSize === size ? "text-primary bg-primary/5" : "text-slate-600"
+                  }`}
               >
                 {size}
                 {editor.getAttributes("textStyle").fontSize === size && <div className="w-1 h-1 rounded-full bg-primary" />}
               </button>
             ))}
             <button
-                type="button"
-                onClick={() => {
-                  (editor as any).chain().focus().unsetFontSize().run();
-                  setShowFontSizePicker(false);
-                }}
-                className="w-full text-left px-3 py-2 rounded-md text-[10px] font-bold text-red-500 hover:bg-red-50 transition-colors mt-1 border-t border-slate-50"
-              >
-                Đặt lại mặc định
-              </button>
+              type="button"
+              onClick={() => {
+                (editor as any).chain().focus().unsetFontSize().run();
+                setShowFontSizePicker(false);
+              }}
+              className="w-full text-left px-3 py-2 rounded-md text-[10px] font-bold text-red-500 hover:bg-red-50 transition-colors mt-1 border-t border-slate-50"
+            >
+              Đặt lại mặc định
+            </button>
           </div>
         )}
       </div>
@@ -193,13 +187,12 @@ const MenuBar = ({ editor }: { editor: any }) => {
             setShowColorPicker(!showColorPicker);
             setShowFontSizePicker(false);
           }}
-          className={`p-2 rounded-lg transition-all flex items-center gap-1 ${
-            showColorPicker ? "bg-white shadow-sm ring-1 ring-slate-200" : "text-slate-600 hover:bg-white hover:shadow-sm"
-          }`}
+          className={`p-2 rounded-lg transition-all flex items-center gap-1 ${showColorPicker ? "bg-white shadow-sm ring-1 ring-slate-200" : "text-slate-600 hover:bg-white hover:shadow-sm"
+            }`}
           title="Màu chữ"
         >
           <Palette size={16} />
-          <div 
+          <div
             className="w-3 h-3 rounded-full border border-slate-200 shadow-sm"
             style={{ backgroundColor: editor.getAttributes("textStyle").color || "#0f172a" }}
           />
@@ -217,11 +210,10 @@ const MenuBar = ({ editor }: { editor: any }) => {
                     editor.chain().focus().setColor(c.color === "inherit" ? "" : c.color).run();
                     setShowColorPicker(false);
                   }}
-                  className={`w-6 h-6 rounded-lg border transition-all hover:scale-125 hover:z-10 ${
-                    (editor.getAttributes("textStyle").color === c.color || (c.color === "inherit" && !editor.getAttributes("textStyle").color))
-                      ? "border-primary ring-2 ring-primary/20 scale-110" 
+                  className={`w-6 h-6 rounded-lg border transition-all hover:scale-125 hover:z-10 ${(editor.getAttributes("textStyle").color === c.color || (c.color === "inherit" && !editor.getAttributes("textStyle").color))
+                      ? "border-primary ring-2 ring-primary/20 scale-110"
                       : "border-slate-100"
-                  }`}
+                    }`}
                   style={{ backgroundColor: c.color === "inherit" ? "white" : c.color }}
                   title={c.name}
                 />
@@ -255,31 +247,32 @@ const ToolbarButton = ({ onClick, active, icon, title, disabled }: any) => (
     onClick={onClick}
     disabled={disabled}
     title={title}
-    className={`p-2 rounded-lg transition-all ${
-      active 
-        ? "bg-primary text-white shadow-md shadow-primary/20" 
+    className={`p-2 rounded-lg transition-all ${active
+        ? "bg-primary text-white shadow-md shadow-primary/20"
         : "text-slate-600 hover:bg-white hover:shadow-sm disabled:opacity-30 disabled:hover:bg-transparent"
-    }`}
+      }`}
   >
     {icon}
   </button>
 );
 
+const extensions = [
+  StarterKit.configure({}),
+  Underline.configure(),
+  TextStyle.configure(),
+  Color.configure(),
+  FontSize,
+  Link.configure({
+    openOnClick: false,
+    HTMLAttributes: {
+      class: "text-primary hover:underline",
+    },
+  }),
+];
+
 export default function RichTextEditor({ value, onChange, label, placeholder }: RichTextEditorProps) {
   const editor = useEditor({
-    extensions: [
-      StarterKit,
-      Underline,
-      TextStyle,
-      Color,
-      FontSize,
-      Link.configure({
-        openOnClick: false,
-        HTMLAttributes: {
-          class: "text-primary hover:underline",
-        },
-      }),
-    ],
+    extensions,
     immediatelyRender: false,
     content: value,
     onUpdate: ({ editor }) => {

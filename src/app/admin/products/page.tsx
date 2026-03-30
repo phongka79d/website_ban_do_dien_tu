@@ -5,8 +5,9 @@ import { createClient } from "@/utils/supabase/client";
 import { ProductService } from "@/services/productService";
 import { ProductWithDetails } from "@/types/database";
 import Link from "next/link";
-import { Edit, Trash2, Plus, Package, ExternalLink, Search } from "lucide-react";
+import { Edit, Trash2, Plus, Package, Search, Eye } from "lucide-react";
 import { ProductImage } from "@/components/common/ProductImage";
+import { Button } from "@/components/ui/Button";
 import ConfirmationModal from "@/components/common/ConfirmationModal";
 import NotificationModal from "@/components/common/NotificationModal";
 
@@ -14,7 +15,7 @@ export default function AdminProductsPage() {
   const [products, setProducts] = useState<ProductWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [productToDelete, setProductToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [productToDelete, setProductToDelete] = useState<{ id: string; name: string; imageUrl?: string | null } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [notification, setNotification] = useState<{ isOpen: boolean; title: string; message: string; type: "success" | "error" }>({
@@ -27,7 +28,8 @@ export default function AdminProductsPage() {
   const fetchProducts = async () => {
     const supabase = createClient();
     if (supabase) {
-      const data = await ProductService.getProducts(supabase);
+      // Admin sees ALL products (onlyActive = false)
+      const data = await ProductService.getProducts(supabase, false);
       setProducts(data);
     }
     setLoading(false);
@@ -37,8 +39,8 @@ export default function AdminProductsPage() {
     fetchProducts();
   }, []);
 
-  const handleDeleteClick = (id: string, name: string) => {
-    setProductToDelete({ id, name });
+  const handleDeleteClick = (id: string, name: string, imageUrl?: string | null) => {
+    setProductToDelete({ id, name, imageUrl });
     setDeleteModalOpen(true);
   };
 
@@ -48,19 +50,33 @@ export default function AdminProductsPage() {
     setIsDeleting(true);
     const supabase = createClient();
     if (supabase) {
-      const { error } = await ProductService.deleteProduct(supabase, productToDelete.id);
-      if (error) {
+      const { success, type, error } = await ProductService.safeDeleteProduct(supabase, productToDelete.id);
+      
+      if (!success) {
         setNotification({
           isOpen: true,
-          title: "Lỗi khi xóa",
-          message: error.message,
+          title: "Lỗi xử lý",
+          message: error?.message || "Không thể thực hiện hành động này.",
           type: "error",
         });
       } else {
+        // --- Cloudinary Cleanup ONLY for Hard Delete ---
+        if (type === 'hard' && productToDelete.imageUrl && !productToDelete.imageUrl.startsWith("http") && !productToDelete.imageUrl.startsWith("/")) {
+          fetch("/api/cloudinary/delete", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ publicIds: [productToDelete.imageUrl] }),
+          }).catch(err => console.error("Cloudinary Cleanup failed:", err));
+        }
+        
+        const successMessage = type === 'hard' 
+          ? `Đã xóa vĩnh viễn sản phẩm "${productToDelete.name}"` 
+          : `Sản phẩm "${productToDelete.name}" đã được ẩn đi để bảo vệ dữ liệu đơn hàng.`;
+
         setNotification({
           isOpen: true,
           title: "Thành công",
-          message: `Đã xóa sản phẩm "${productToDelete.name}"`,
+          message: successMessage,
           type: "success",
         });
         fetchProducts();
@@ -69,6 +85,31 @@ export default function AdminProductsPage() {
     setIsDeleting(false);
     setDeleteModalOpen(false);
     setProductToDelete(null);
+  };
+
+  const handleReactivate = async (id: string, name: string) => {
+    setIsDeleting(true);
+    const supabase = createClient();
+    if (supabase) {
+      const { error } = await ProductService.reactivateProduct(supabase, id);
+      if (error) {
+        setNotification({
+          isOpen: true,
+          title: "Lỗi phục hồi",
+          message: error.message,
+          type: "error",
+        });
+      } else {
+        setNotification({
+          isOpen: true,
+          title: "Thành công",
+          message: `Đã hiển thị lại sản phẩm "${name}"`,
+          type: "success",
+        });
+        fetchProducts();
+      }
+    }
+    setIsDeleting(false);
   };
 
   const filteredProducts = products.filter((p) =>
@@ -108,13 +149,14 @@ export default function AdminProductsPage() {
             />
           </div>
 
-          <Link
+          <Button
+            as={Link}
             href="/admin/products/new"
-            className="w-full md:w-auto flex items-center justify-center gap-2 bg-primary text-white px-8 py-3.5 rounded-2xl font-black uppercase tracking-wider shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all text-[13px] cursor-pointer"
+            leftIcon={<Plus size={18} />}
+            className="w-full md:w-auto h-12 rounded-2xl font-black uppercase tracking-wider shadow-lg shadow-primary/20 text-[13px]"
           >
-            <Plus size={18} />
             Thêm sản phẩm mới
-          </Link>
+          </Button>
         </div>
       </header>
 
@@ -127,7 +169,7 @@ export default function AdminProductsPage() {
 
             <div className="relative z-10 flex flex-col h-full">
               {/* Product Image Holder */}
-              <div className="aspect-square rounded-2xl bg-slate-50 overflow-hidden flex items-center justify-center p-2 mb-4 border border-slate-100 transition-transform group-hover:scale-105 duration-500 relative">
+              <div className="relative aspect-square rounded-2xl bg-slate-50 overflow-hidden flex items-center justify-center p-2 mb-4 border border-slate-100 transition-transform group-hover:scale-105 duration-500 relative">
                 <ProductImage
                   src={p.image_url}
                   alt={p.name}
@@ -135,7 +177,14 @@ export default function AdminProductsPage() {
                   height={200}
                   className="object-contain w-full h-full"
                 />
-                {p.stock_quantity <= 10 && (
+                {!p.is_active && (
+                  <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-[2px] flex items-center justify-center">
+                    <span className="px-3 py-1 rounded-full bg-slate-100 text-slate-900 text-[10px] font-black uppercase tracking-widest shadow-xl">
+                      Đã vô hiệu hóa
+                    </span>
+                  </div>
+                )}
+                {p.is_active && p.stock_quantity <= 10 && (
                   <div className="absolute top-2 right-2 px-2 py-0.5 rounded-lg bg-orange-500 text-white text-[10px] font-black uppercase">
                     Sắp hết hàng
                   </div>
@@ -168,19 +217,37 @@ export default function AdminProductsPage() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex gap-2">
-                <Link
+              <div className="flex gap-2 mt-auto">
+                <Button
+                  as={Link}
                   href={`/admin/products/${p.id}/edit`}
-                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-slate-50 text-slate-400 hover:bg-indigo-50 hover:text-indigo-500 transition-all font-bold text-[12px] cursor-pointer"
+                  variant="ghost"
+                  size="sm"
+                  leftIcon={<Edit size={14} />}
+                  className="flex-1 bg-slate-50 text-slate-400 hover:bg-indigo-50 hover:text-indigo-500 rounded-xl h-9"
                 >
-                  <Edit size={14} /> Sửa
-                </Link>
-                <button
-                  onClick={() => handleDeleteClick(p.id!, p.name)}
-                  className="p-2.5 rounded-xl bg-slate-50 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all cursor-pointer"
+                  SỬA
+                </Button>
+                
+                {!p.is_active ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleReactivate(p.id!, p.name)}
+                    className="w-12 bg-emerald-50 text-emerald-500 hover:bg-emerald-100 rounded-xl h-9 flex items-center justify-center p-0"
+                  >
+                    <Eye size={14} />
+                  </Button>
+                ) : null}
+
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleDeleteClick(p.id!, p.name, p.image_url)}
+                  className="w-12 bg-slate-50 text-slate-400 hover:bg-red-50 hover:text-red-500 rounded-xl h-9 flex items-center justify-center p-0"
                 >
                   <Trash2 size={14} />
-                </button>
+                </Button>
               </div>
             </div>
           </div>

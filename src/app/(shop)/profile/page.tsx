@@ -6,6 +6,7 @@ import { createClient } from "@/utils/supabase/client";
 import { updateProfileInfo } from "@/app/auth/profile-actions";
 import { ImageUpload } from "@/components/admin/ImageUpload";
 import { getUserName, getUserAvatar } from "@/utils/auth-helpers";
+import { Button } from "@/components/ui/Button";
 
 export default function ProfileGeneralPage() {
   const [isPending, startTransition] = useTransition();
@@ -155,14 +156,14 @@ export default function ProfileGeneralPage() {
           </div>
 
           <div className="flex justify-end pt-4">
-            <button
-              disabled={isPending}
+            <Button
               type="submit"
-              className="flex items-center gap-2 rounded-2xl bg-primary px-8 py-3.5 text-sm font-black text-white transition-all hover:bg-primary-dark hover:shadow-lg hover:shadow-primary/30 active:scale-95 disabled:opacity-50"
+              isLoading={isPending}
+              leftIcon={<Save size={18} />}
+              className="px-8 rounded-2xl font-black shadow-lg shadow-primary/20"
             >
-              {isPending ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
               Lưu thay đổi
-            </button>
+            </Button>
           </div>
         </form>
       </div>

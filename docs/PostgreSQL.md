@@ -230,10 +230,69 @@ CREATE POLICY "Users can delete their own cart items" ON cart_items
         cart_id IN (SELECT id FROM carts WHERE user_id = auth.uid())
     );
 
+-- 13. Create Wishlist Items Table
+CREATE TABLE wishlist_items (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    product_id UUID REFERENCES products(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, product_id)
+);
+
+-- Enable RLS for Wishlist
+ALTER TABLE wishlist_items ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view own wishlist" ON wishlist_items FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can add to own wishlist" ON wishlist_items FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can remove from own wishlist" ON wishlist_items FOR DELETE USING (auth.uid() = user_id);
+
+-- 14. Create Orders Table
+CREATE TABLE orders (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'shipped', 'delivered', 'cancelled')),
+    total_amount BIGINT NOT NULL CHECK (total_amount >= 0),
+    shipping_address TEXT NOT NULL,
+    phone_number TEXT NOT NULL,
+    payment_method TEXT DEFAULT 'COD',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 15. Create Order Items Table (Snapshot of product at purchase time)
+CREATE TABLE order_items (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    order_id UUID REFERENCES orders(id) ON DELETE CASCADE,
+    product_id UUID REFERENCES products(id) ON DELETE SET NULL,
+    quantity INT NOT NULL CHECK (quantity > 0),
+    price_at_purchase BIGINT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- RLS Policies for Orders
+ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can view own orders" ON orders FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own orders" ON orders FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- RLS Policies for Order Items
+ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can view own order items" ON order_items FOR SELECT USING (
+    order_id IN (SELECT id FROM orders WHERE user_id = auth.uid())
+);
+CREATE POLICY "Users can insert own order items" ON order_items FOR INSERT WITH CHECK (
+    order_id IN (SELECT id FROM orders WHERE user_id = auth.uid())
+);
+
+-- Performance Indexes
+CREATE INDEX idx_orders_user_id ON orders(user_id);
+CREATE INDEX idx_order_items_order_id ON order_items(order_id);
+
 -- ==========================================
 -- MIGRATION LOGS
 -- ==========================================
 
 -- 2026-03-28: Thêm trường image_url cho categories
 -- 2026-03-29: Thêm hệ thống Giỏ hàng (Carts & Cart Items)
+-- 2026-03-29: Thêm hệ thống Yêu thích (Wishlist Items)
+-- 2026-03-30: Thêm hệ thống Đơn hàng (Orders & Order Items)
 

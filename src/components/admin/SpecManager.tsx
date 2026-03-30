@@ -153,13 +153,13 @@ export const SpecManager: React.FC<SpecManagerProps> = ({ specs, onAdd, onRemove
 
       <Button
         type="button"
-        variant="soft"
-        size="sm"
+        variant="light"
         onClick={onAdd}
+        radius="xl"
         leftIcon={<Plus size={14} />}
-        className="font-bold"
+        className="px-4 py-2.5 text-[12px] w-auto h-auto"
       >
-        Thêm thông số khác
+        THÊM THÔNG SỐ KHÁC
       </Button>
     </div>
   );

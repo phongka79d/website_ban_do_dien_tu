@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import RichTextEditor from "./RichTextEditor";
+import { ProductFormData } from "@/lib/validations/product";
 
 interface ProductFormProps {
   initialData?: Product;
@@ -22,17 +23,18 @@ interface ProductFormProps {
 export default function ProductForm({ initialData }: ProductFormProps) {
   const router = useRouter();
   const {
-    formData,
+    register,
+    control,
+    handleSubmit,
+    onSubmit,
+    setValue,
+    watch,
+    errors,
     loading,
     imageUrl,
-    setImageUrl,
     brands,
     categories,
-    updateField,
-    updateSpec,
-    addSpec,
-    removeSpec,
-    handleSubmit,
+    formData,
     isEdit,
   } = useProductForm(initialData);
 
@@ -49,15 +51,30 @@ export default function ProductForm({ initialData }: ProductFormProps) {
   });
 
   const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
+  const [pendingData, setPendingData] = useState<ProductFormData | null>(null);
 
-  const handleFormSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setConfirmSaveOpen(true);
-  };
+  const handleFormSubmit = handleSubmit(
+    (data) => {
+      // Nếu validation thành công, lưu lại data tạm thời và mở modal xác nhận
+      setPendingData(data as any);
+      setConfirmSaveOpen(true);
+    },
+    (invalidErrors) => {
+      setNotification({
+        isOpen: true,
+        title: "Dữ liệu không hợp lệ",
+        message: "Vui lòng kiểm tra lại các trường thông tin có màu đỏ.",
+        type: "error",
+      });
+    }
+  );
 
   const executeSubmit = async () => {
+    if (!pendingData) return;
     setConfirmSaveOpen(false);
-    const result = await handleSubmit();
+    
+    // Gọi API xử lý update / create
+    const result = await onSubmit(pendingData);
     if (result) {
       setNotification({
         isOpen: true,
@@ -71,7 +88,6 @@ export default function ProductForm({ initialData }: ProductFormProps) {
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
       <form onSubmit={handleFormSubmit} className="grid grid-cols-12 gap-6 items-stretch">
-        {/* Row 1: Information & Settings */}
         <div className="col-span-12 lg:col-span-8">
           <Card variant="elevated" radius="2xl" className="p-8 h-full flex flex-col relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-slate-50 rounded-bl-[60px] -z-0"></div>
@@ -84,8 +100,8 @@ export default function ProductForm({ initialData }: ProductFormProps) {
                 <AdminInput
                   label="Tên sản phẩm"
                   required
-                  value={formData.name}
-                  onChange={(e) => updateField("name", e.target.value)}
+                  {...register("name")}
+                  error={errors.name?.message}
                   placeholder="Ví dụ: iPhone 15 Pro Max"
                 />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -93,33 +109,42 @@ export default function ProductForm({ initialData }: ProductFormProps) {
                     label="Giá bán (VNĐ)"
                     required
                     type="number"
-                    value={formData.price}
-                    onChange={(e) => updateField("price", e.target.value)}
+                    {...register("price", { valueAsNumber: true })}
+                    error={errors.price?.message}
                     placeholder="29000000"
                   />
                   <AdminInput
                     label="Giá gốc"
                     type="number"
-                    value={formData.original_price}
-                    onChange={(e) => updateField("original_price", e.target.value)}
+                    {...register("original_price", { valueAsNumber: true })}
+                    error={errors.original_price?.message}
                     placeholder="34000000"
                   />
                 </div>
                 <div className="space-y-2 pt-2">
-                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Khuyến mãi / Tóm tắt</label>
+                  <div className="flex justify-between items-center">
+                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Khuyến mãi / Tóm tắt</label>
+                    {errors.promotion_text && (
+                      <span className="text-[10px] font-bold text-rose-500">{errors.promotion_text.message}</span>
+                    )}
+                  </div>
                   <textarea
                     rows={3}
                     placeholder="Giảm giá mạnh tay..."
-                    className="w-full p-4 rounded-2xl border border-slate-100 focus:border-primary outline-none transition-all bg-slate-50/50 focus:bg-white text-[14px] font-medium"
-                    value={formData.promotion_text}
-                    onChange={(e) => updateField("promotion_text", e.target.value)}
+                    className={`w-full p-4 rounded-2xl border ${
+                      errors.promotion_text ? "border-rose-200 bg-rose-50/30" : "border-slate-100 bg-slate-50/50"
+                    } focus:border-primary outline-none transition-all focus:bg-white text-[14px] font-medium`}
+                    {...register("promotion_text")}
                   />
                 </div>
                 <RichTextEditor
                   label="Mô tả chi tiết sản phẩm (Description)"
-                  value={(formData as any).description || ""}
-                  onChange={(content) => updateField("description", content)}
+                  value={formData.description || ""}
+                  onChange={(content) => setValue("description", content)}
                 />
+                {errors.description && (
+                  <p className="text-[10px] font-bold text-rose-500 mt-2">{errors.description.message}</p>
+                )}
               </div>
             </div>
           </Card>
@@ -137,15 +162,15 @@ export default function ProductForm({ initialData }: ProductFormProps) {
                 <AdminSelect
                   label="Danh mục"
                   required
-                  value={formData.category_slug}
-                  onChange={(e) => updateField("category_slug", e.target.value)}
+                  {...register("category_slug")}
+                  error={errors.category_slug?.message}
                   options={categories.map((c) => ({ value: c.slug, label: c.name }))}
                 />
                 <AdminSelect
                   label="Thương hiệu"
                   required
-                  value={formData.brand_id}
-                  onChange={(e) => updateField("brand_id", e.target.value)}
+                  {...register("brand_id")}
+                  error={errors.brand_id?.message}
                   options={brands.map((b) => ({ value: b.id, label: b.name }))}
                 />
                 <div className="p-5 rounded-[24px] bg-slate-50/50 border border-slate-100 space-y-5 mt-2">
@@ -153,13 +178,13 @@ export default function ProductForm({ initialData }: ProductFormProps) {
                     label="Số lượng tồn kho"
                     required
                     type="number"
-                    value={formData.stock_quantity}
-                    onChange={(e) => updateField("stock_quantity", e.target.value)}
+                    {...register("stock_quantity", { valueAsNumber: true })}
+                    error={errors.stock_quantity?.message}
                   />
                   <AdminToggle
                     label="Hỗ trợ trả góp 0%"
                     checked={formData.has_installment_0}
-                    onChange={(checked) => updateField("has_installment_0", checked)}
+                    onChange={(checked) => setValue("has_installment_0", checked)}
                   />
                 </div>
               </div>
@@ -167,7 +192,6 @@ export default function ProductForm({ initialData }: ProductFormProps) {
           </Card>
         </div>
 
-        {/* Row 2: Specs & Media/Submit */}
         <div className="col-span-12 lg:col-span-8">
           <Card variant="elevated" radius="2xl" className="p-8 h-full flex flex-col relative overflow-hidden">
             <h2 className="text-xl font-black text-slate-900 mb-8 flex items-center gap-2">
@@ -176,11 +200,33 @@ export default function ProductForm({ initialData }: ProductFormProps) {
             </h2>
             <div className="grow">
               <SpecManager
-                specs={formData.specs}
-                onAdd={addSpec}
-                onRemove={removeSpec}
-                onUpdate={updateSpec}
+                specs={Object.entries(formData.specs || {}).map(([key, value]) => ({ key, value: String(value) }))}
+                onAdd={() => {
+                  const currentSpecs = { ...formData.specs };
+                  currentSpecs[""] = "";
+                  setValue("specs", currentSpecs);
+                }}
+                onRemove={(index) => {
+                  const entries = Object.entries(formData.specs || {});
+                  entries.splice(index, 1);
+                  setValue("specs", Object.fromEntries(entries));
+                }}
+                onUpdate={(index, field, value) => {
+                  const entries = Object.entries(formData.specs || {});
+                  if (field === "key") {
+                    const oldVal = entries[index][1];
+                    entries[index] = [value, oldVal];
+                  } else {
+                    entries[index][1] = value;
+                  }
+                  setValue("specs", Object.fromEntries(entries));
+                }}
               />
+              {errors.specs && (
+                <p className="text-[10px] font-bold text-rose-500 mt-4">
+                  {typeof errors.specs.message === 'string' ? errors.specs.message : "Thông số kỹ thuật không hợp lệ"}
+                </p>
+              )}
             </div>
           </Card>
         </div>
@@ -198,12 +244,15 @@ export default function ProductForm({ initialData }: ProductFormProps) {
                 imageUrl={imageUrl}
                 categoryFolder={formData.category_slug ? `web_ban_do_dien_tu/products/${formData.category_slug}` : "antigravity-store/products/uncategorized"}
                 onSuccess={(result) => {
-                  setImageUrl(result.info.public_id);
+                  setValue("image_url", result.info.public_id);
                   document.body.style.overflow = "auto";
                 }}
                 onClose={() => (document.body.style.overflow = "auto")}
-                onRemove={() => setImageUrl("")}
+                onRemove={() => setValue("image_url", "")}
               />
+              {errors.image_url && (
+                <p className="text-[10px] font-bold text-rose-500 mt-2">{errors.image_url.message}</p>
+              )}
             </div>
           </Card>
 
@@ -252,3 +301,4 @@ export default function ProductForm({ initialData }: ProductFormProps) {
     </div>
   );
 }
+

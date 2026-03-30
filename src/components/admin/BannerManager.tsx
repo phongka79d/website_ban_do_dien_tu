@@ -6,13 +6,16 @@ import { BannerService } from "@/services/bannerService";
 import { Banner } from "@/types/database";
 import { Edit, Trash2, Image as ImageIcon, ExternalLink } from "lucide-react";
 import StatusBadge from "@/components/ui/StatusBadge";
-
 import ConfirmationModal from "@/components/common/ConfirmationModal";
 import NotificationModal from "@/components/common/NotificationModal";
 import { AdminInput } from "./AdminInput";
 import { AdminToggle } from "./AdminToggle";
 import AdminManagerShell from "./AdminManagerShell";
 import AdminActionModal from "./AdminActionModal";
+import { Button } from "../ui/Button";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { bannerSchema, BannerFormData } from "@/lib/validations/banner";
 
 export default function BannerManager() {
   const [banners, setBanners] = useState<Banner[]>([]);
@@ -21,12 +24,24 @@ export default function BannerManager() {
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [currentBanner, setCurrentBanner] = useState<Partial<Banner> | null>(null);
+  const [currentBanner, setCurrentBanner] = useState<Banner | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [notification, setNotification] = useState<{
     isOpen: boolean; title: string; message: string; type: "success" | "error";
   }>({ isOpen: false, title: "", message: "", type: "success" });
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    reset,
+    formState: { errors },
+  } = useForm<BannerFormData>({
+    resolver: zodResolver(bannerSchema) as any,
+
+  });
 
   const fetchBanners = async () => {
     setLoading(true);
@@ -41,26 +56,55 @@ export default function BannerManager() {
   useEffect(() => { fetchBanners(); }, []);
 
   const handleCreate = () => {
-    setCurrentBanner({ title: "", subtitle: "", image_url: "", bg_color: "bg-gradient-to-r from-slate-900 to-slate-800", target_url: "", is_active: true, display_order: banners.length + 1 });
+    reset({
+      title: "",
+      subtitle: "",
+      image_url: "",
+      bg_color: "bg-gradient-to-r from-slate-900 to-slate-800",
+      target_url: "",
+      is_active: true,
+      display_order: banners.length + 1,
+    });
+    setCurrentBanner(null);
     setIsEditModalOpen(true);
   };
 
-  const handleEdit = (banner: Banner) => { setCurrentBanner(banner); setIsEditModalOpen(true); };
-  const handleDeleteClick = (banner: Banner) => { setCurrentBanner(banner); setIsDeleteModalOpen(true); };
+  const handleEdit = (banner: Banner) => {
+    setCurrentBanner(banner);
+    reset({
+      title: banner.title,
+      subtitle: banner.subtitle || "",
+      image_url: banner.image_url,
+      bg_color: banner.bg_color || "bg-gradient-to-r from-slate-900 to-slate-800",
+      target_url: banner.target_url || "",
+      is_active: banner.is_active,
+      display_order: banner.display_order,
+    });
+    setIsEditModalOpen(true);
+  };
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!currentBanner?.title || !currentBanner?.image_url) return;
+  const handleDeleteClick = (banner: Banner) => {
+    setCurrentBanner(banner);
+    setIsDeleteModalOpen(true);
+  };
+
+  const onSave = async (data: BannerFormData) => {
     setIsSubmitting(true);
     const supabase = createClient();
     if (supabase) {
-      const { error } = currentBanner.id
-        ? await BannerService.updateBanner(supabase, currentBanner.id, currentBanner)
-        : await BannerService.createBanner(supabase, currentBanner);
+      const { error } = currentBanner?.id
+        ? await BannerService.updateBanner(supabase, currentBanner.id, data)
+        : await BannerService.createBanner(supabase, data);
+
       if (error) {
         setNotification({ isOpen: true, title: "Lỗi", message: error.message, type: "error" });
       } else {
-        setNotification({ isOpen: true, title: "Thành công", message: currentBanner.id ? "Cập nhật banner thành công" : "Thêm banner thành công", type: "success" });
+        setNotification({
+          isOpen: true,
+          title: "Thành công",
+          message: currentBanner?.id ? "Cập nhật banner thành công" : "Thêm banner thành công",
+          type: "success"
+        });
         setIsEditModalOpen(false);
         fetchBanners();
       }
@@ -84,6 +128,8 @@ export default function BannerManager() {
     }
     setIsSubmitting(false);
   };
+
+  const bannerActive = watch("is_active");
 
   const filteredBanners = banners.filter((b) => b.title.toLowerCase().includes(searchTerm.toLowerCase()));
 
@@ -142,25 +188,70 @@ export default function BannerManager() {
         title={currentBanner?.id ? "Cập nhật banner" : "Thêm banner mới"}
         maxWidth="max-w-2xl"
       >
-        <form onSubmit={handleSave} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <form onSubmit={handleSubmit(onSave as any)} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
           <div className="space-y-6 md:col-span-2">
-            <AdminInput label="Tiêu đề chính" required value={currentBanner?.title || ""} onChange={(e) => setCurrentBanner({ ...currentBanner, title: e.target.value })} placeholder="Ví dụ: iPhone 15 Pro Max" />
+            <AdminInput 
+              label="Tiêu đề chính" 
+              required 
+              {...register("title")} 
+              error={errors.title?.message}
+              placeholder="Ví dụ: iPhone 15 Pro Max" 
+            />
             <div className="space-y-2">
-              <label className="text-[12px] font-black text-slate-400 uppercase tracking-widest px-1">Tiêu đề phụ (Subtitle)</label>
-              <textarea className="w-full p-4 rounded-2xl border border-slate-100 bg-slate-50/50 focus:border-primary focus:bg-white outline-none transition-all font-bold text-[14px] min-h-[80px]" value={currentBanner?.subtitle || ""} onChange={(e) => setCurrentBanner({ ...currentBanner, subtitle: e.target.value })} placeholder="Ví dụ: Titanium siêu bền. Chip A17 Pro đỉnh cao." />
+              <div className="flex justify-between items-center">
+                <label className="text-[12px] font-black text-slate-400 uppercase tracking-widest px-1">Tiêu đề phụ (Subtitle)</label>
+                {errors.subtitle && <span className="text-[10px] font-bold text-rose-500">{errors.subtitle.message}</span>}
+              </div>
+              <textarea 
+                className={`w-full p-4 rounded-2xl border ${errors.subtitle ? 'border-rose-200 bg-rose-50/30' : 'border-slate-100 bg-slate-50/50'} focus:border-primary focus:bg-white outline-none transition-all font-bold text-[14px] min-h-[80px]`} 
+                {...register("subtitle")} 
+                placeholder="Ví dụ: Titanium siêu bền. Chip A17 Pro đỉnh cao." 
+              />
             </div>
           </div>
-          <AdminInput label="URL Hình ảnh" required value={currentBanner?.image_url || ""} onChange={(e) => setCurrentBanner({ ...currentBanner, image_url: e.target.value })} placeholder="https://..." />
-          <AdminInput label="Màu nền / Gradient Class" value={currentBanner?.bg_color || ""} onChange={(e) => setCurrentBanner({ ...currentBanner, bg_color: e.target.value })} placeholder="bg-gradient-to-r from-..." />
-          <AdminInput label="Link điều hướng (URL)" value={currentBanner?.target_url || ""} onChange={(e) => setCurrentBanner({ ...currentBanner, target_url: e.target.value })} placeholder="/product/..." />
-          <AdminInput label="Thứ tự hiển thị" type="number" value={currentBanner?.display_order?.toString() || ""} onChange={(e) => setCurrentBanner({ ...currentBanner, display_order: parseInt(e.target.value) || 0 })} placeholder="1" />
+          <AdminInput 
+            label="URL Hình ảnh" 
+            required 
+            {...register("image_url")} 
+            error={errors.image_url?.message}
+            placeholder="https://..." 
+          />
+          <AdminInput 
+            label="Màu nền / Gradient Class" 
+            {...register("bg_color")} 
+            error={errors.bg_color?.message}
+            placeholder="bg-gradient-to-r from-..." 
+          />
+          <AdminInput 
+            label="Link điều hướng (URL)" 
+            {...register("target_url")} 
+            error={errors.target_url?.message}
+            placeholder="/product/..." 
+          />
+          <AdminInput 
+            label="Thứ tự hiển thị" 
+            type="number" 
+            {...register("display_order")} 
+            error={errors.display_order?.message}
+            placeholder="1" 
+          />
           <div className="md:col-span-2 pt-2">
-            <AdminToggle label="Hoạt động" checked={currentBanner?.is_active || false} onChange={(checked) => setCurrentBanner({ ...currentBanner, is_active: checked })} />
+            <AdminToggle 
+              label="Hoạt động" 
+              checked={bannerActive || false} 
+              onChange={(checked) => setValue("is_active", checked)} 
+            />
           </div>
           <div className="md:col-span-2 pt-4">
-            <button disabled={isSubmitting} className="w-full py-5 rounded-2xl bg-primary text-white font-black text-lg shadow-xl shadow-primary/30 hover:scale-[1.01] active:scale-95 disabled:grayscale transition-all cursor-pointer uppercase tracking-widest">
-              {isSubmitting ? "Đang xử lý..." : "Xác nhận lưu"}
-            </button>
+            <Button 
+              type="submit" 
+              isLoading={isSubmitting} 
+              fullWidth 
+              size="lg"
+            >
+              Xác nhận lưu
+            </Button>
           </div>
         </form>
       </AdminActionModal>
@@ -170,3 +261,4 @@ export default function BannerManager() {
     </>
   );
 }
+

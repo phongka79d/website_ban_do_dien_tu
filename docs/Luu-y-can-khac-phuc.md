@@ -26,3 +26,7 @@ Dưới đây là các lỗ hổng và đánh đổi kiến trúc hiện tại c
 - **Vấn đề:** Codebase lệ thuộc mãnh liệt vào Trigger Database của PostgreSQL (Supabase) và hệ thống Edge của Vercel (`@supabase/ssr`).
 - **Tại sao nguy hiểm:** Khách hàng không thể bê nguyên thùng Source này đẩy lên Host tự do hoặc Máy chủ tự kéo cáp (On-premise Nginx/MySQL/MERN Stack) mà không phải đập đi sửa Database.
 - **Hướng khắc phục sau này:** Đây là sự Đánh đổi (Trade-off) đứt ruột đã được xác nhận để ăn điểm tốc độ Go-To-Market cực nhanh. Không có cách khắc phục ngoài việc đập hệ thống viết lại API REST bằng NestJS/Express độc lập.
+
+
+Unit Testing: Thêm Jest/Vitest cho services/ để đảm bảo logic tính toán giỏ hàng luôn đúng.
+E2E Testing: Sử dụng Playwright để test luồng Checkout từ lúc chọn hàng đến khi thanh toán.

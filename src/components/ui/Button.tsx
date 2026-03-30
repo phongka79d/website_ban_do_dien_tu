@@ -23,6 +23,8 @@ const buttonVariants = cva(
         danger:
           "bg-red-500 text-white shadow-lg shadow-red-500/30 hover:bg-red-600",
         ghost: "hover:bg-slate-100 text-slate-600 hover:text-primary transition-colors",
+        light: "bg-slate-50 text-slate-400 hover:bg-indigo-50 hover:text-indigo-500 transition-colors",
+        lightDanger: "bg-slate-50 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors",
       },
       size: {
         default: "h-12 px-6 py-2",
@@ -57,7 +59,8 @@ export interface ButtonProps
   isLoading?: boolean;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
-  as?: React.ElementType;
+  as?: any;
+  href?: string;
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(

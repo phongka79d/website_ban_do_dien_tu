@@ -22,27 +22,38 @@ const UserIcon = () => (
   </svg>
 );
 
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { registerSchema, RegisterFormData } from "@/lib/validations/auth";
+
 export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [globalError, setGlobalError] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
-  const [email, setEmail] = useState("");
+  const [userEmail, setUserEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setLoading(true);
-    setError(null);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<RegisterFormData>({
+    resolver: zodResolver(registerSchema),
+  });
 
-    const formData = new FormData(event.currentTarget);
-    const emailValue = formData.get("email") as string;
-    setEmail(emailValue);
+  async function onRegisterSubmit(data: RegisterFormData) {
+    setLoading(true);
+    setGlobalError(null);
+    setUserEmail(data.email);
+
+    const formData = new FormData();
+    Object.entries(data).forEach(([key, value]) => formData.append(key, value));
 
     const result = await signUp(formData);
 
     if (result?.error) {
-      setError(result.error);
+      setGlobalError(result.error);
       setLoading(false);
     } else {
       setIsVerifying(true);
@@ -53,12 +64,12 @@ export default function RegisterPage() {
   async function handleVerifyOtp(event: React.FormEvent) {
     event.preventDefault();
     setLoading(true);
-    setError(null);
+    setGlobalError(null);
 
-    const result = await verifyOtpCode(email, otp);
+    const result = await verifyOtpCode(userEmail, otp);
 
     if (result?.error) {
-      setError(result.error);
+      setGlobalError(result.error);
       setLoading(false);
     } else {
       window.location.href = "/";
@@ -66,8 +77,8 @@ export default function RegisterPage() {
   }
 
   async function handleResendOtp() {
-    const result = await resendOtpCode(email);
-    if (result?.error) setError(result.error);
+    const result = await resendOtpCode(userEmail);
+    if (result?.error) setGlobalError(result.error);
   }
 
   // OTP Verification View
@@ -81,13 +92,13 @@ export default function RegisterPage() {
           <h2 className="text-2xl font-black text-slate-900">Xác thực tài khoản</h2>
           <p className="mt-2 text-sm font-medium text-slate-500">
             Vui lòng nhập mã 6 số chúng tôi vừa gửi đến <br />
-            <span className="font-bold text-slate-700">{email}</span>
+            <span className="font-bold text-slate-700">{userEmail}</span>
           </p>
         </div>
         <form onSubmit={handleVerifyOtp} className="space-y-6">
-          {error && (
+          {globalError && (
             <div className="rounded-xl bg-red-50 p-4 text-xs font-medium text-red-600 border border-red-100 italic">
-              {error}
+              {globalError}
             </div>
           )}
           <OtpField value={otp} onChange={setOtp} onResend={handleResendOtp} initialCountdown={0} label="Mã xác thực" accentColor="secondary" />
@@ -117,37 +128,37 @@ export default function RegisterPage() {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
-        {error && (
+      <form onSubmit={handleSubmit(onRegisterSubmit)} className="space-y-5">
+        {globalError && (
           <div className="rounded-xl bg-red-50 p-4 text-xs font-medium text-red-600 border border-red-100 italic">
-            {error}
+            {globalError}
           </div>
         )}
 
         <AuthInput
           label="Họ và tên"
           icon={<UserIcon />}
-          name="fullName"
+          {...register("full_name")}
+          error={errors.full_name?.message}
           type="text"
-          required
           placeholder="Nguyễn Văn A"
           accentColor="secondary"
         />
         <AuthInput
           label="Email"
           icon={<Mail size={18} />}
-          name="email"
+          {...register("email")}
+          error={errors.email?.message}
           type="email"
-          required
           placeholder="name@example.com"
           accentColor="secondary"
         />
         <AuthInput
           label="Số điện thoại"
           icon={<PhoneIcon />}
-          name="phone"
+          {...register("phone")}
+          error={errors.phone?.message}
           type="tel"
-          required
           placeholder="0901234567"
           accentColor="secondary"
         />
@@ -159,9 +170,18 @@ export default function RegisterPage() {
               {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
           }
-          name="password"
+          {...register("password")}
+          error={errors.password?.message}
           type={showPassword ? "text" : "password"}
-          required
+          placeholder="••••••••"
+          accentColor="secondary"
+        />
+        <AuthInput
+          label="Xác nhận mật khẩu"
+          icon={<Lock size={18} />}
+          {...register("confirm_password")}
+          error={errors.confirm_password?.message}
+          type={showPassword ? "text" : "password"}
           placeholder="••••••••"
           accentColor="secondary"
         />
@@ -187,3 +207,4 @@ export default function RegisterPage() {
     </AuthCard>
   );
 }
+

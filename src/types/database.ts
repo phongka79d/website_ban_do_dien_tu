@@ -6,6 +6,7 @@ export interface Brand {
   id: string;
   name: string;
   logo_url: string | null;
+  is_active: boolean;
   created_at: string;
 }
 
@@ -15,6 +16,7 @@ export interface Category {
   slug: string;
   description: string | null;
   image_url: string | null;
+  is_active: boolean;
 }
 
 export interface ProductImage {
@@ -42,6 +44,7 @@ export interface Product {
   description: string | null;
   has_installment_0: boolean;
   stock_quantity: number;
+  is_active: boolean;
   created_at: string;
   updated_at: string;
   
@@ -87,6 +90,46 @@ export interface CartItem {
   products?: Product;
 }
 
+export interface WishlistItem {
+  id: string;
+  user_id: string;
+  product_id: string;
+  created_at: string;
+  
+  // Joined fields
+  products?: Product;
+}
+
+export type WishlistWithItems = WishlistItem[];
+
 export type CartWithItems = Cart & {
   cart_items: CartItem[];
+};
+
+export interface Order {
+  id: string;
+  user_id: string;
+  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  total_amount: number;
+  shipping_address: string;
+  phone_number: string;
+  payment_method: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OrderItem {
+  id: string;
+  order_id: string;
+  product_id: string;
+  quantity: number;
+  price_at_purchase: number;
+  created_at: string;
+  
+  // Joined fields
+  products?: Product;
+}
+
+export type OrderWithItems = Order & {
+  order_items: OrderItem[];
 };

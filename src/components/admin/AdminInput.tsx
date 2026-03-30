@@ -1,15 +1,35 @@
-import React from "react";
+import React, { forwardRef } from "react";
 
 interface AdminInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label: string;
+  error?: string;
 }
 
-export const AdminInput: React.FC<AdminInputProps> = ({ label, ...props }) => (
-  <div className="space-y-2">
-    <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">{label}</label>
-    <input
-      {...props}
-      className={`w-full p-4 rounded-xl border border-slate-200 focus:border-primary outline-none transition-all bg-slate-50/50 focus:bg-white ${props.className || ""}`}
-    />
-  </div>
+export const AdminInput = forwardRef<HTMLInputElement, AdminInputProps>(
+  ({ label, error, ...props }, ref) => (
+    <div className="space-y-2">
+      <div className="flex justify-between items-center">
+        <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest leading-none">
+          {label}
+        </label>
+        {error && (
+          <span className="text-[10px] font-bold text-rose-500 animate-in fade-in slide-in-from-right-2 duration-300">
+            {error}
+          </span>
+        )}
+      </div>
+      <input
+        {...props}
+        ref={ref}
+        className={`w-full p-4 rounded-2xl border ${
+          error ? "border-rose-200 bg-rose-50/30" : "border-slate-100 bg-slate-50/50"
+        } focus:border-primary outline-none transition-all focus:bg-white text-[14px] font-medium placeholder:text-slate-300 ${
+          props.className || ""
+        }`}
+      />
+    </div>
+  )
 );
+
+AdminInput.displayName = "AdminInput";
+
