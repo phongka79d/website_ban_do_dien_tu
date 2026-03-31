@@ -17,7 +17,7 @@ const buttonVariants = cva(
         secondary:
           "bg-secondary text-white shadow-xl shadow-secondary/30 hover:bg-secondary/90 hover:shadow-secondary/40",
         soft:
-          "bg-indigo-50 text-indigo-600 hover:bg-indigo-100 dark:bg-slate-800 dark:text-slate-100/90",
+          "bg-indigo-50 text-indigo-600 hover:bg-secondary hover:text-white dark:bg-slate-800 dark:text-slate-100/90",
         outline:
           "border-2 border-slate-200 bg-transparent text-slate-700 hover:border-primary hover:text-primary transition-colors",
         danger:

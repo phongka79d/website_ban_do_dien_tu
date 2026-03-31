@@ -11,21 +11,28 @@ import { Button } from "@/components/ui/Button";
 import ConfirmationModal from "@/components/common/ConfirmationModal";
 import NotificationModal from "@/components/common/NotificationModal";
 import { useAdminSearch } from "@/hooks/useAdminSearch";
+import { Pagination } from "@/components/ui/Pagination";
 
 export default function AdminProductsPage() {
-  const searchFn = useCallback((supabase: any, query: string, limit: number) => 
-    ProductService.searchProducts(supabase, query, limit), []);
+  const searchFn = useCallback((supabase: any, query: string, page: number, pageSize: number) => 
+    ProductService.searchProducts(supabase, query, page, pageSize), []);
 
   const {
     searchTerm,
     setSearchTerm,
     results: products,
     loading,
+    page,
+    setPage,
+    pageSize,
+    setPageSize,
+    totalCount,
+    totalPages,
     refresh: fetchProducts
   } = useAdminSearch<ProductWithDetails>({
     searchFn,
-    initialLimit: 20,
-    searchLimit: 20
+    initialPageSize: 20,
+    storageKey: "admin-products-pageSize"
   });
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -128,7 +135,7 @@ export default function AdminProductsPage() {
             Quản lý <span className="text-primary italic">Sản phẩm</span>
           </h1>
           <p className="text-slate-500 text-[14px] font-medium mt-1">
-            Tổng cộng: <span className="text-primary font-black">{products.length}</span> sản phẩm trong kho.
+            Tổng cộng: <span className="text-primary font-black">{totalCount}</span> sản phẩm trong kho.
           </p>
         </div>
 
@@ -249,6 +256,17 @@ export default function AdminProductsPage() {
           </div>
         ))}
       </div>
+
+      {/* Pagination */}
+      <Pagination
+        page={page}
+        setPage={setPage}
+        pageSize={pageSize}
+        setPageSize={setPageSize}
+        totalPages={totalPages}
+        totalCount={totalCount}
+        className="mt-8"
+      />
 
       {/* Empty State */}
       {products.length === 0 && (

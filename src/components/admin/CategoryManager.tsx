@@ -18,21 +18,28 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { categorySchema, CategoryFormData } from "@/lib/validations/category";
 import { useAdminSearch } from "@/hooks/useAdminSearch";
+import { Pagination } from "../ui/Pagination";
 
 export default function CategoryManager() {
-  const searchFn = useCallback((supabase: any, query: string, limit: number) => 
-    ProductService.searchCategories(supabase, query, limit), []);
+  const searchFn = useCallback((supabase: any, query: string, page: number, pageSize: number) => 
+    ProductService.searchCategories(supabase, query, page, pageSize), []);
 
   const {
     searchTerm,
     setSearchTerm,
     results: categories,
     loading,
+    page,
+    setPage,
+    pageSize,
+    setPageSize,
+    totalCount,
+    totalPages,
     refresh: fetchCategories
   } = useAdminSearch<Category>({
     searchFn,
-    initialLimit: 20,
-    searchLimit: 20
+    initialPageSize: 20,
+    storageKey: "admin-categories-pageSize"
   });
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -236,6 +243,16 @@ export default function CategoryManager() {
             </Card>
           ))}
         </div>
+
+        <Pagination
+          page={page}
+          setPage={setPage}
+          pageSize={pageSize}
+          setPageSize={setPageSize}
+          totalPages={totalPages}
+          totalCount={totalCount}
+          className="mt-8"
+        />
       </AdminManagerShell>
 
       <AdminActionModal

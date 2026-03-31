@@ -18,21 +18,28 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { brandSchema, BrandFormData } from "@/lib/validations/brand";
 import { useAdminSearch } from "@/hooks/useAdminSearch";
+import { Pagination } from "../ui/Pagination";
 
 export default function BrandManager() {
-  const searchFn = useCallback((supabase: any, query: string, limit: number) => 
-    ProductService.searchBrands(supabase, query, limit), []);
+  const searchFn = useCallback((supabase: any, query: string, page: number, pageSize: number) => 
+    ProductService.searchBrands(supabase, query, page, pageSize), []);
 
   const {
     searchTerm,
     setSearchTerm,
     results: brands,
     loading,
+    page,
+    setPage,
+    pageSize,
+    setPageSize,
+    totalCount,
+    totalPages,
     refresh: fetchBrands
   } = useAdminSearch<Brand>({
     searchFn,
-    initialLimit: 20,
-    searchLimit: 20
+    initialPageSize: 20,
+    storageKey: "admin-brands-pageSize"
   });
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -224,6 +231,16 @@ export default function BrandManager() {
             </Card>
           ))}
         </div>
+
+        <Pagination
+          page={page}
+          setPage={setPage}
+          pageSize={pageSize}
+          setPageSize={setPageSize}
+          totalPages={totalPages}
+          totalCount={totalCount}
+          className="mt-8"
+        />
       </AdminManagerShell>
 
       <AdminActionModal

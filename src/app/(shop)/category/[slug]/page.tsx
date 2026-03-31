@@ -4,10 +4,16 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ChevronRight, LayoutGrid } from "lucide-react";
 import ProductCard from "@/components/ProductCard";
+import FilterBar from "@/components/FilterBar";
+import { getSortByFromParam } from "@/utils/productSort";
 
-export default async function CategoryPage(props: { params: Promise<{ slug: string }> }) {
-  const params = await props.params;
+export default async function CategoryPage(props: { 
+  params: Promise<{ slug: string }>,
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }> 
+}) {
+  const [params, resolvedSearchParams] = await Promise.all([props.params, props.searchParams]);
   const { slug } = params;
+  const sortBy = getSortByFromParam(resolvedSearchParams.filter as string);
 
   const supabase = await createClient();
   if (!supabase) return notFound();
@@ -15,7 +21,7 @@ export default async function CategoryPage(props: { params: Promise<{ slug: stri
   // Fetch Category info and Products in parallel
   const [category, products] = await Promise.all([
     ProductService.getCategoryBySlug(supabase, slug),
-    ProductService.getProductsByCategory(supabase, slug),
+    ProductService.getProductsByCategory(supabase, slug, true, sortBy),
   ]);
 
   if (!category) return notFound();
@@ -57,6 +63,8 @@ export default async function CategoryPage(props: { params: Promise<{ slug: stri
             </div>
           </div>
         </div>
+
+        <FilterBar />
 
         {/* Product Grid */}
         {products.length > 0 ? (

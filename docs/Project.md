@@ -7,12 +7,12 @@ Tài liệu này mô tả chi tiết kiến trúc, cấu trúc thư mục và ch
 | Lớp (Layer) | Công nghệ |
 | :--- | :--- |
 | **Framework** | Next.js 16.2.1 (App Router), React 19.2.4 |
-| **Styling** | Tailwind CSS 4, Framer Motion (Animations) |
+| **Styling** | Tailwind CSS 4 (Magenta/Indigo), Framer Motion (Animations) |
 | **Database/Auth** | Supabase (PostgreSQL, GoTrue for Auth) |
-| **State Management** | Zustand (Persistent Cart) |
+| **State Management** | Zustand (Persistent Cart & Wishlist) |
 | **Editor** | Tiptap (Rich Text for Product Descriptions) |
 | **Media** | Cloudinary (Image Hosting & Optimization) |
-| **Infrastructure** | Service Worker (Bypass Router Cache) |
+| **Infrastructure** | Service Worker (Bypass Router Cache for Next.js 16) |
 
 ---
 
@@ -20,102 +20,96 @@ Tài liệu này mô tả chi tiết kiến trúc, cấu trúc thư mục và ch
 
 ### ✨ Cấu hình Toàn cục & Layout
 - `app/layout.tsx`: Root Layout chính, đăng ký `ServiceWorkerManager` và `Header`.
-- `app/globals.css`: Chứa các biến theme Tailwind 4 (Magenta/Indigo).
-- `app/not-found.tsx`: Trang lỗi 404 tùy chỉnh.
-- `middleware.ts`: Hệ thống bảo mật, kiểm soát truy cập Admin và User.
+- `app/globals.css`: Chứa các biến theme Tailwind 4 và Utility classes.
+- `middleware.ts`: Hệ thống bảo mật nâng cao, kiểm soát quyền Admin/User và bảo vệ các private routes.
 
 ### 🛒 Phân đoạn Cửa hàng (`app/(shop)`)
 - `app/(shop)/page.tsx`: Trang chủ với Carousel cao cấp và danh sách sản phẩm.
-- `app/(shop)/cart/`: Trang giỏ hàng, tính toán giá trị đơn hàng thực tế.
-- `app/(shop)/products/`: Chi tiết sản phẩm và danh sách theo bộ lọc.
-- `app/(shop)/category/`: Trang danh mục sản phẩm.
-- `app/(shop)/profile/`: Quản lý thông tin cá nhân khách hàng.
-- `app/(shop)/wishlist/`: Trang danh sách sản phẩm yêu thích của người dùng.
+- `app/(shop)/cart/`: Trang giỏ hàng với tính toán giá trị thực tế và hiệu ứng animation.
+- `app/(shop)/checkout/`: Quy trình thanh toán (Shipping info, Payment methods).
+- `app/(shop)/track-order/`: Tính năng tra cứu trạng thái đơn hàng theo ID.
+- `app/(shop)/products/`: Trang danh sách sản phẩm và chi tiết sản phẩm.
+- `app/(shop)/category/`: Lọc sản phẩm theo danh mục và thuộc tính.
+- `app/(shop)/profile/`: Quản lý hồ sơ, địa chỉ và lịch sử đơn hàng của người dùng.
+- `app/(shop)/wishlist/`: Danh sách sản phẩm yêu thích đồng bộ thời gian thực.
 
 ### 🔐 Phân đoạn Authenticate
-- `app/login/`, `app/register/`: Trang đăng nhập và đăng ký.
-- `app/forgot-password/`: Quy trình khôi phục mật khẩu.
-- `app/auth/actions.ts`: Chứa các Server Actions cho đăng nhập/đăng ký.
-- `app/auth/profile-actions.ts`: Các tác vụ liên quan đến cập nhật hồ sơ.
+- `app/login/`, `app/register/`: Trang đăng nhập/đăng ký với đa phương thức (OTP, Password).
+- `app/auth/actions.ts`: Server Actions xử lý luồng Authentication bảo mật.
 
 ### 🛠️ Phân đoạn Quản trị (`app/admin`)
-- `admin/page.tsx`: Dashboard tổng quan, thống kê nhanh.
-- `admin/products/`: Quản lý sản phẩm (CRUD), hỗ trợ thông số kỹ thuật (JSONB).
-- `admin/banners/`: Chỉnh sửa danh sách banner cho Homepage Carousel.
-- `admin/categories/`: Quản lý các nhóm sản phẩm theo slug.
-- `admin/brands/`: Quản lý thương hiệu và logo nhà sản xuất.
+- `admin/page.tsx`: Dashboard quản trị với biểu đồ thống kê cơ bản.
+- `admin/orders/`: Hệ thống quản lý đơn hàng chuyên sâu (Cập nhật trạng thái, In hóa đơn).
+- `admin/products/`: Quản lý danh mục sản phẩm (CRUD) với hỗ trợ JSONB Thông số kỹ thuật.
+- `admin/banners/`: Trình quản lý Carousel trang chủ (hỗ trợ Live Preview).
+- `admin/categories/` & `admin/brands/`: Quản lý metadata cho hệ thống.
 
 ---
 
 ## 🛡️ 3. Cơ chế Ổn định & Kiến trúc
 
-### Network Interceptor (Next.js 16 Fix)
-- `public/sw.js`: **Service Worker** quan trọng để intercept các request điều hướng, giúp tránh tình trạng "đóng băng" UI do cơ chế Router Cache của Next.js 16.
-- `components/ServiceWorkerManager.tsx`: Thành phần client-side đăng ký SW an toàn.
+### Network Stability (Next.js 16 Fix)
+- `public/sw.js`: **Service Worker** quan trọng để tránh tình trạng Router Cache gây đóng băng UI trên Next 16.
+- `components/ServiceWorkerManager.tsx`: Thành phần đăng ký SW tại client.
 
-### Bảo mật & Validate
-- `utils/validators/`: Chứa các schema validation (ví dụ: `productSpecs.ts`).
-- `utils/auth-helpers.ts`: Các hàm hỗ trợ kiểm tra quyền và trạng thái session.
-- `utils/auth-messages.ts`: Quản lý các thông báo lỗi/thành công (đã Việt hóa).
+### Bảo mật & Trải nghiệm
+- `utils/auth-messages.ts`: Hệ thống thông báo tập trung, đã bản địa hóa hoàn toàn.
+- `utils/validators/`: Schema validation bằng Zod cho toàn bộ các form nhập liệu.
 
 ---
 
 ## 🎨 4. Thành phần Giao diện (src/components)
 
 ### UI chung (General)
-- `components/Header.tsx`: Thanh điều hướng sticky, tích hợp tìm kiếm và admin link.
-- `components/Carousel.tsx`: Slider banner 50/50 layout, hỗ trợ glassmorphism.
-- `components/ProductCard.tsx`: Card sản phẩm tương thích mobile, hiển thị badge cấu hình.
+- `components/Header.tsx`: Thanh điều hướng thông minh, tích hợp quản lý trạng thái giỏ hàng.
+- `components/Carousel.tsx`: Slider banner 50/50 layout tối ưu cho hình ảnh sản phẩm.
+- `components/ProductCard.tsx`: Card sản phẩm tương thích mobile, hiển thị badge thuộc tính.
 
 ### Hệ thống Admin Components
-- `components/admin/AdminManagerShell.tsx`: Khung (Shell) chuẩn cho các trang quản trị CMS.
-- `components/admin/ProductForm.tsx`: Form quản lý sản phẩm tích hợp Cloudinary và JSONB specs.
-- `components/admin/SpecManager.tsx`: Trình chỉnh sửa thông số kỹ thuật động (Key-Value).
-- `components/admin/RichTextEditor.tsx`: Soạn thảo mô tả sản phẩm bằng Tiptap cao cấp.
-- `components/admin/ImageUpload.tsx`: Widget tải lên và xem trước ảnh qua Cloudinary.
-- `components/admin/AdminActionModal.tsx`: Modal phản hồi và hành động chung.
+- `components/admin/AdminSidebar.tsx`: Sidebar điều hướng phân quyền tích hợp.
+- `components/admin/BannerManager.tsx`: **Premium** CMS Banner với tính năng *Live Preview Mockup*.
+- `components/admin/AdminInput.tsx`: Input cao cấp hỗ trợ hiển thị icon và validation state.
+- `components/admin/ProductForm.tsx`: Hệ thống form phức tạp cho quản lý sản phẩm.
+- `components/admin/ImageUpload.tsx`: Widget tải lên Cloudinary tích hợp xem trước.
 
 ---
 
-## 💾 5. Dữ liệu & Logic (src/services, store, hooks)
+## 💾 5. Dữ liệu & Logic (src/services, store)
 
 ### Data Access Layer (DAL)
-- `services/productService.ts`: Các thao tác Supabase liên quan đến sản phẩm.
-- `services/categoryService.ts`, `services/brandService.ts`: Quản lý danh mục và thương hiệu.
-- `services/bannerService.ts`: Quản lý dữ liệu từ bảng `banners`.
+- `services/orderService.ts`: Xử lý logic nghiệp vụ liên quan đến đơn hàng và vận chuyển.
+- `services/productService.ts`: Tương tác cơ sở dữ liệu cho toàn bộ sản phẩm.
+- `services/cartService.ts`: Đồng bộ hóa giỏ hàng giữa local storage và server.
 
-### State Management
-- `store/useCartStore.ts`: Sử dụng **Zustand** với middleware `persist` để quản lý giỏ hàng đồng bộ trên LocalStorage.
-- `store/useWishlistStore.ts`: Quản lý danh sách sản phẩm yêu thích, đồng bộ trực tiếp với Supabase.
-
-### Custom Hooks
-- `hooks/useProductForm.ts`: Quản lý trạng thái form sản phẩm và logic tích hợp ảnh.
+### State Management (Zustand)
+- `store/useCartStore.ts`: Quản lý giỏ hàng `persist` liên tục.
+- `store/useWishlistStore.ts`: Quản lý sản phẩm yêu thích đồng bộ Supabase.
 
 ---
 
 ## 📍 6. Trạng thái Phát triển (Feature Roadmap)
 
-Dưới đây là tiến độ thực hiện các tính năng dựa trên [Kế hoạch Chức năng](file:///c:/Users/ACER/Next-JS-Project/web_ban_do_dien_tu/docs/functional-plan.md):
+Dựa trên [Kế hoạch Chức năng](file:///c:/Users/ACER/Next-JS-Project/web_ban_do_dien_tu/docs/functional-plan.md):
 
 ### ✅ Đã hoàn thành (Done)
-- [x] **Xác thực (Auth):** Email OTP, Phone Auth, Password.
-- [x] **Phân quyền (RBAC):** Role Admin/User, khóa tài khoản Real-time.
-- [x] **Trang chủ:** Carousel cao cấp, lưới sản phẩm từ DB.
-- [x] **Admin CMS:** CRUD Sản phẩm (JSONB), Banner, Thương hiệu, Danh mục.
-- [x] **Architecture:** Service Worker bypass cache, middleware bảo mật.
-- [x] **Yêu thích (Wishlist):** Lưu sản phẩm, hiệu ứng animation trái tim bay, trang danh sách riêng.
-- [x] **Giỏ hàng (Cart):** Đã có store Zustand, đang hoàn thiện UI và đồng bộ hóa.
-- [x] **Chi tiết Sản phẩm:** Hiển thị thông số kỹ thuật chi tiết và mô tả Rich Text.
-
+- [x] **Xác thực & Bảo mật:** OTP, Password, Role-based Access Control (RBAC).
+- [x] **Giao diện trang chủ:** Banner Carousel Mockup, Grid sản phẩm.
+- [x] **Danh mục & Tìm kiếm:** Lọc sản phẩm theo Category và Brand.
+- [x] **Quản trị CMS:** CRUD Sản phẩm, Banner, Thương hiệu, Danh mục.
+- [x] **Giỏ hàng & Yêu thích:** State management hoàn chỉnh, đồng bộ DB.
+- [x] **Trang Checkout:** Nhập thông tin, chọn phương thức thanh toán (COD/Bank).
+- [x] **Quản lý Đơn hàng (Admin):** Danh sách đơn hàng, cập nhật trạng thái vận chuyển.
+- [x] **Chi tiết Sản phẩm:** Thông số kỹ thuật chuyên dụng và Rich Text description.
+- [x] **Theo dõi đơn hàng:** Tra cứu công khai dựa trên mã định danh.
 
 ### 🚧 Đang thực hiện (In Progress)
-- [ ] **Bộ lọc & Tìm kiếm:** Lọc theo giá, thương hiệu, specs.
-- [ ] **Quản lý Đơn hàng (Admin):** Xem và cập nhật trạng thái vận chuyển.
-
+- [ ] **Thống kê chuyên sâu:** Biểu đồ doanh thu và xu hướng mua sắm.
+- [ ] **Email Automation:** Tự động gửi email xác nhận đơn hàng và mã vận đơn.
 
 ### 📅 Lộ trình sắp tới (Todo)
-- [ ] **Thanh toán (Checkout):** Nhập thông tin giao hàng & COD.
-- [ ] **Hệ thống Premium:** So sánh sản phẩm, Gợi ý AI, Dark Mode.
+- [ ] **Hệ thống So sánh Sản phẩm:** Bảng so sánh thông số kỹ thuật động.
+- [ ] **Gợi ý AI:** Tự động đề xuất sản phẩm dựa trên hành vi người dùng.
+- [ ] **Dark Mode:** Đa dạng giao diện cho trải nghiệm ban đêm.
 
 ---
 

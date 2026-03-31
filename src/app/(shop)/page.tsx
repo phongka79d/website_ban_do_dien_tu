@@ -1,20 +1,36 @@
-import ProductList from "@/components/ProductList";
-import FilterBar from "@/components/FilterBar";
 import Carousel from "@/components/Carousel";
+import FilterBar from "@/components/FilterBar";
+import PaginatedShop from "@/components/shop/PaginatedShop";
+import { BannerService } from "@/services/bannerService";
 import { ProductService } from "@/services/productService";
 import { createClient } from "@/utils/supabase/server";
-import { BannerService } from "@/services/bannerService";
+import { getSortByFromParam } from "@/utils/productSort";
 
-export default async function Home() {
+interface HomeProps {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}
+
+export default async function Home({ searchParams }: HomeProps) {
   const supabase = await createClient();
   if (!supabase) return null;
 
-  const [products, banners] = await Promise.all([
-    ProductService.getProducts(supabase),
+  // Await searchParams in Next.js 15+
+  const resolvedParams = await searchParams;
+  const page = Number(resolvedParams.page) || 1;
+  const pageSize = Number(resolvedParams.pageSize) || 16;
+  const sortBy = getSortByFromParam(resolvedParams.filter as string);
+
+  console.log(`[DEBUG] HomePage - sortBy: ${sortBy}`);
+
+  // Fetch paginated products and banners
+  const [paginatedData, banners] = await Promise.all([
+    ProductService.searchProducts(supabase, "", page, pageSize, sortBy),
     BannerService.getBanners(supabase)
   ]);
 
-  console.log("Products in Page:", products.length);
+  const { data: products, count } = paginatedData;
+
+  console.log(`Page ${page}, Items: ${products.length}, Total: ${count}`);
 
   return (
     <main className="min-h-screen p-8 max-w-7xl mx-auto">
@@ -34,13 +50,13 @@ export default async function Home() {
 
       <FilterBar />
 
-      <ProductList products={products} />
-
-      <div className="mt-12 flex justify-center">
-        <button className="px-12 py-4 rounded-full border-2 border-slate-200 font-bold text-slate-600 hover:border-primary hover:text-primary transition-all">
-          Xem thêm sản phẩm
-        </button>
-      </div>
+      {/* Paginated Product List & Control */}
+      <PaginatedShop 
+        products={products} 
+        totalCount={count} 
+        page={page} 
+        pageSize={pageSize} 
+      />
     </main>
   );
 }

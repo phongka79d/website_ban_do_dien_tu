@@ -21,8 +21,8 @@ export function ProductSearchSelect({ label, onSelect, initialValue, error }: Pr
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const searchFn = useCallback((supabase: any, query: string, limit: number) => 
-    ProductService.searchProducts(supabase, query, limit), []);
+  const searchFn = useCallback((supabase: any, query: string, page: number, pageSize: number) => 
+    ProductService.searchProducts(supabase, query, page, pageSize), []);
 
   const {
     searchTerm,
@@ -31,8 +31,7 @@ export function ProductSearchSelect({ label, onSelect, initialValue, error }: Pr
     loading
   } = useAdminSearch<ProductWithDetails>({
     searchFn,
-    initialLimit: 5,
-    searchLimit: 10
+    initialPageSize: 10
   });
 
   // Fetch initial product if ID is provided

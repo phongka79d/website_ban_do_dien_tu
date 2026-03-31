@@ -96,29 +96,42 @@ ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 -- 8. Triggers & Functions
 -- ------------------------------------------
 
--- Function to handle new user signup
-CREATE OR REPLACE FUNCTION public.handle_new_user()
+-- Function to handle user confirmation (Improved)
+CREATE OR REPLACE FUNCTION public.handle_user_confirmation()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.profiles (id, email, full_name, avatar_url, phone, is_active, role)
-  VALUES (
-    NEW.id,
-    NEW.email,
-    COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name', 'User'),
-    COALESCE(NEW.raw_user_meta_data->>'avatar_url', NEW.raw_user_meta_data->>'picture', NULL),
-    NEW.raw_user_meta_data->>'phone',
-    TRUE,
-    COALESCE(NEW.raw_user_meta_data->>'role', 'user')
-  );
+  -- 1. Chỉ thực hiện nếu email đã được xác minh (không phải NULL)
+  -- 2. Kiểm tra xem profile đã tồn tại chưa để tránh lỗi ghi đè dữ liệu
+  IF (NEW.email_confirmed_at IS NOT NULL) THEN
+    IF NOT EXISTS (SELECT 1 FROM public.profiles WHERE id = NEW.id) THEN
+      INSERT INTO public.profiles (id, email, full_name, avatar_url, phone, is_active, role)
+      VALUES (
+        NEW.id,
+        NEW.email,
+        COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name', 'User'),
+        COALESCE(NEW.raw_user_meta_data->>'avatar_url', NEW.raw_user_meta_data->>'picture', NULL),
+        NEW.raw_user_meta_data->>'phone',
+        TRUE,
+        COALESCE(NEW.raw_user_meta_data->>'role', 'user')
+      );
+    END IF;
+  END IF;
+  
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Trigger to sync auth.users with public.profiles
+-- Chạy trên cả INSERT và UPDATE để bao phủ mọi tình huống xác thực
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
-CREATE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+DROP TRIGGER IF EXISTS on_auth_user_confirmed ON auth.users;
+
+CREATE TRIGGER on_auth_user_confirmed
+  AFTER INSERT OR UPDATE ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_user_confirmation();
+
+-- 11. Cleanup unverified users (Run via manual maintenance or PG Cron)
+-- DELETE FROM auth.users WHERE email_confirmed_at IS NULL AND created_at < NOW() - INTERVAL '12 hours';
 
 -- 9. Sample Data Insertion
 

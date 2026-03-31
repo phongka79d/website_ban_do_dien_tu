@@ -101,9 +101,16 @@ export const ProductService = {
   /**
    * Fetches products grouped by a specific category slug.
    */
-  async getProductsByCategory(supabase: SupabaseClient, categorySlug: string, onlyActive: boolean = true): Promise<ProductWithDetails[]> {
+  async getProductsByCategory(
+    supabase: SupabaseClient, 
+    categorySlug: string, 
+    onlyActive: boolean = true,
+    sortBy: "default" | "hot" | "discount" | "price_asc" | "price_desc" = "default"
+  ): Promise<ProductWithDetails[]> {
+    const tableName = sortBy !== "default" ? "products_with_metrics" : "products";
+
     let query = supabase
-      .from("products")
+      .from(tableName)
       .select(`
         *,
         brands (*),
@@ -115,7 +122,20 @@ export const ProductService = {
       query = query.eq("is_active", true);
     }
 
-    const { data, error } = await query.order("created_at", { ascending: false });
+    // Sorting Logic
+    if (sortBy === "hot") {
+      query = query.order("hot_score", { ascending: false, nullsFirst: false });
+    } else if (sortBy === "discount") {
+      query = query.order("discount_percentage", { ascending: false, nullsFirst: false });
+    } else if (sortBy === "price_asc") {
+      query = query.order("price", { ascending: true });
+    } else if (sortBy === "price_desc") {
+      query = query.order("price", { ascending: false });
+    } else {
+      query = query.order("created_at", { ascending: false });
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error(`Error fetching products for category ${categorySlug}:`, error.message);
@@ -448,73 +468,119 @@ export const ProductService = {
    * SERVER-SIDE SEARCH: Products
    * Filters by name or brand name.
    */
-  async searchProducts(supabase: SupabaseClient, query: string, limit: number = 10): Promise<ProductWithDetails[]> {
+  /**
+   * SERVER-SIDE SEARCH: Products with Pagination
+   */
+  async searchProducts(
+    supabase: SupabaseClient, 
+    query: string, 
+    page: number = 1,
+    pageSize: number = 20,
+    sortBy: "default" | "hot" | "discount" | "price_asc" | "price_desc" = "default"
+  ): Promise<{ data: ProductWithDetails[]; count: number }> {
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+
+    // Use the view for advanced sorting to get metrics like hot_score
+    const tableName = sortBy !== "default" ? "products_with_metrics" : "products";
+
+    console.log(`[DEBUG] ProductService - Using table: ${tableName}, sortBy: ${sortBy}`);
+
     let baseQuery = supabase
-      .from("products")
+      .from(tableName)
       .select(`
         *,
         brands (*),
         categories (*)
-      `);
+      `, { count: "exact" });
     
     if (query) {
-      // Simple name search for now. Advanced: use Postgres search or join brands
       baseQuery = baseQuery.ilike("name", `%${query}%`);
     }
 
-    const { data, error } = await baseQuery
-      .order("created_at", { ascending: false })
-      .limit(limit);
+    // Sorting Logic
+    if (sortBy === "hot") {
+      baseQuery = baseQuery.order("hot_score", { ascending: false, nullsFirst: false });
+    } else if (sortBy === "discount") {
+      baseQuery = baseQuery.order("discount_percentage", { ascending: false, nullsFirst: false });
+    } else if (sortBy === "price_asc") {
+      baseQuery = baseQuery.order("price", { ascending: true });
+    } else if (sortBy === "price_desc") {
+      baseQuery = baseQuery.order("price", { ascending: false });
+    } else {
+      baseQuery = baseQuery.order("created_at", { ascending: false });
+    }
+
+    const { data, error, count } = await baseQuery.range(from, to);
 
     if (error) {
       console.error("Supabase Error [searchProducts]:", error.message);
-      return [];
+      return { data: [], count: 0 };
     }
 
-    return (data as ProductWithDetails[]) || [];
+    return { 
+      data: (data as ProductWithDetails[]) || [], 
+      count: count || 0 
+    };
   },
 
   /**
-   * SERVER-SIDE SEARCH: Categories
+   * SERVER-SIDE SEARCH: Categories with Pagination
    */
-  async searchCategories(supabase: SupabaseClient, query: string, limit: number = 10): Promise<Category[]> {
-    let baseQuery = supabase.from("categories").select("*");
+  async searchCategories(
+    supabase: SupabaseClient, 
+    query: string,
+    page: number = 1,
+    pageSize: number = 20
+  ): Promise<{ data: Category[]; count: number }> {
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+
+    let baseQuery = supabase.from("categories").select("*", { count: "exact" });
     
     if (query) {
       baseQuery = baseQuery.ilike("name", `%${query}%`);
     }
 
-    const { data, error } = await baseQuery
+    const { data, error, count } = await baseQuery
       .order("name")
-      .limit(limit);
+      .range(from, to);
 
     if (error) {
       console.error("Supabase Error [searchCategories]:", error.message);
-      return [];
+      return { data: [], count: 0 };
     }
 
-    return data || [];
+    return { data: data || [], count: count || 0 };
   },
 
   /**
-   * SERVER-SIDE SEARCH: Brands
+   * SERVER-SIDE SEARCH: Brands with Pagination
    */
-  async searchBrands(supabase: SupabaseClient, query: string, limit: number = 10): Promise<Brand[]> {
-    let baseQuery = supabase.from("brands").select("*");
+  async searchBrands(
+    supabase: SupabaseClient, 
+    query: string,
+    page: number = 1,
+    pageSize: number = 20
+  ): Promise<{ data: Brand[]; count: number }> {
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+
+    let baseQuery = supabase.from("brands").select("*", { count: "exact" });
     
     if (query) {
       baseQuery = baseQuery.ilike("name", `%${query}%`);
     }
 
-    const { data, error } = await baseQuery
+    const { data, error, count } = await baseQuery
       .order("name")
-      .limit(limit);
+      .range(from, to);
 
     if (error) {
       console.error("Supabase Error [searchBrands]:", error.message);
-      return [];
+      return { data: [], count: 0 };
     }
 
-    return data || [];
+    return { data: data || [], count: count || 0 };
   },
 };
