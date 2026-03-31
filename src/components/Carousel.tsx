@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Banner } from "@/types/database";
 import { Button, buttonVariants } from "./ui/Button";
 import { cn } from "@/utils/cn";
+import { ProductImage } from "./common/ProductImage";
 
 const AUTOPLAY_DELAY = 5000;
 
@@ -110,12 +111,14 @@ export default function Carousel({ banners }: CarouselProps) {
                 {/* Image Side (Right) - Occupies full half and FILLED as requested */}
                 <div className="relative flex h-[55%] md:h-full w-full md:w-1/2 bg-black/20 overflow-hidden">
                   <div className="relative h-full w-full">
-                    <img
+                    <ProductImage
                       src={banner.image_url}
                       alt={banner.title}
+                      width={800}
+                      height={500}
+                      priority={true}
                       className="h-full w-full object-cover filter drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)] transform scale-100 group-hover:scale-110 transition-transform duration-1000"
                     />
-                    {/* Subtle Overlay to blend with text side if needed */}
                     <div className="absolute inset-0 bg-gradient-to-r from-black/20 to-transparent pointer-events-none" />
                   </div>
                 </div>

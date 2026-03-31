@@ -24,7 +24,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
 
       {imageUrl ? (
         <div className="relative w-full max-w-sm aspect-video rounded-2xl overflow-hidden border-2 border-primary shadow-xl group">
-          {imageUrl.includes("cloudinary.com") || !imageUrl.startsWith("http") ? (
+          {imageUrl.length > 3 && (imageUrl.includes("cloudinary.com") || !imageUrl.startsWith("http")) ? (
             <CldImage
               src={imageUrl}
               width={800}

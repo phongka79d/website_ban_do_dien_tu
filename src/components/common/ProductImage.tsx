@@ -32,7 +32,7 @@ export const ProductImage = ({
     );
   }
 
-  const isCloudinary = !src.startsWith("http") && !src.startsWith("/");
+  const isCloudinary = src.length > 3 && !src.startsWith("http") && !src.startsWith("/");
 
   if (isCloudinary) {
     return (

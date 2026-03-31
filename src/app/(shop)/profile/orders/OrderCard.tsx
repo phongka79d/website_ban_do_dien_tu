@@ -102,7 +102,9 @@ export default function OrderCard({ order, userId }: OrderCardProps) {
         {/* Footer Actions */}
         <div className="flex items-center justify-between pt-4 border-t border-slate-50">
           <div>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Thanh toán: {order.payment_method?.toUpperCase()}</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">
+              Thanh toán: {order.payment_method?.toLowerCase() === 'cod' ? 'COD' : 'Chuyển khoản'}
+            </p>
             <p className="text-[10px] text-slate-400">Đ/c: {order.shipping_address?.slice(0, 20)}...</p>
           </div>
           

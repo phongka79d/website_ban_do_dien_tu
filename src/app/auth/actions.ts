@@ -62,14 +62,24 @@ export async function signIn(formData: FormData) {
     return { error: getAuthMessage(signInResponse.error.message) };
   }
 
-  // Check if account is active
+  // Check if account is active in profiles table
   const { data: profile, error: profileFetchError } = await supabase
     .from("profiles")
     .select("is_active")
     .eq("id", signInResponse.data.user?.id)
     .single();
 
-  if (profile && profile.is_active === false) {
+  if (profileFetchError && profileFetchError.code !== "PGRST116") {
+    console.error("Profile fetch error:", profileFetchError);
+  }
+
+  if (!profile) {
+    // Nếu không có profile, nghĩa là user trong auth.users chưa CONFIRM email
+    await supabase.auth.signOut();
+    return { error: "Tài khoản chưa được xác thực email. Vui lòng kiểm tra hộp thư." };
+  }
+
+  if (profile.is_active === false) {
     await supabase.auth.signOut();
     return { error: getAuthMessage("account-blocked") };
   }

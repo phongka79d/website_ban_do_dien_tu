@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { ProductService } from "@/services/productService";
 import { Category } from "@/types/database";
@@ -17,11 +17,23 @@ import { Card } from "../ui/Card";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { categorySchema, CategoryFormData } from "@/lib/validations/category";
+import { useAdminSearch } from "@/hooks/useAdminSearch";
 
 export default function CategoryManager() {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
+  const searchFn = useCallback((supabase: any, query: string, limit: number) => 
+    ProductService.searchCategories(supabase, query, limit), []);
+
+  const {
+    searchTerm,
+    setSearchTerm,
+    results: categories,
+    loading,
+    refresh: fetchCategories
+  } = useAdminSearch<Category>({
+    searchFn,
+    initialLimit: 20,
+    searchLimit: 20
+  });
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -42,19 +54,6 @@ export default function CategoryManager() {
   } = useForm<CategoryFormData>({
     resolver: zodResolver(categorySchema),
   });
-
-  const fetchCategories = async () => {
-    setLoading(true);
-    const supabase = createClient();
-    if (supabase) {
-      // Admin sees ALL categories
-      const data = await ProductService.getCategories(supabase, false);
-      setCategories(data);
-    }
-    setLoading(false);
-  };
-
-  useEffect(() => { fetchCategories(); }, []);
 
   const handleCreate = () => {
     reset({ name: "", slug: "", description: "", image_url: "" });
@@ -160,8 +159,6 @@ export default function CategoryManager() {
   const categorySlug = watch("slug");
   const categoryImageUrl = watch("image_url");
 
-  const filteredCategories = categories.filter((c) => c.name.toLowerCase().includes(searchTerm.toLowerCase()));
-
   return (
     <>
       <AdminManagerShell
@@ -171,12 +168,12 @@ export default function CategoryManager() {
         onAdd={handleCreate}
         addLabel="Thêm danh mục"
         loading={loading}
-        isEmpty={filteredCategories.length === 0}
+        isEmpty={categories.length === 0}
         emptyIcon={<Grid size={48} />}
         emptyText="Không tìm thấy danh mục nào"
       >
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredCategories.map((category) => (
+          {categories.map((category) => (
             <Card 
               key={category.id} 
               variant="flat" 

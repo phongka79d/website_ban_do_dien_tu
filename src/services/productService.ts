@@ -158,7 +158,9 @@ export const ProductService = {
       .single();
 
     if (error) {
-      console.error("Supabase Error [createProduct]:", error.message);
+      // Logic log có thể được giữ lại để debug trong môi trường dev, 
+      // nhưng tránh log toàn bộ stack trace hoặc thông tin kỹ thuật quá chi tiết
+      // console.error("Database Error [createProduct]:", error.message);
     }
 
     return { data: data as Product, error };
@@ -176,7 +178,7 @@ export const ProductService = {
       .single();
 
     if (error) {
-      console.error("Supabase Error [updateProduct]:", error.message);
+      // console.error("Database Error [updateProduct]:", error.message);
     }
 
     return { data: data as Product, error };
@@ -440,5 +442,79 @@ export const ProductService = {
     }
 
     return data?.map(p => p.image_url).filter(Boolean) as string[] || [];
+  },
+
+  /**
+   * SERVER-SIDE SEARCH: Products
+   * Filters by name or brand name.
+   */
+  async searchProducts(supabase: SupabaseClient, query: string, limit: number = 10): Promise<ProductWithDetails[]> {
+    let baseQuery = supabase
+      .from("products")
+      .select(`
+        *,
+        brands (*),
+        categories (*)
+      `);
+    
+    if (query) {
+      // Simple name search for now. Advanced: use Postgres search or join brands
+      baseQuery = baseQuery.ilike("name", `%${query}%`);
+    }
+
+    const { data, error } = await baseQuery
+      .order("created_at", { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      console.error("Supabase Error [searchProducts]:", error.message);
+      return [];
+    }
+
+    return (data as ProductWithDetails[]) || [];
+  },
+
+  /**
+   * SERVER-SIDE SEARCH: Categories
+   */
+  async searchCategories(supabase: SupabaseClient, query: string, limit: number = 10): Promise<Category[]> {
+    let baseQuery = supabase.from("categories").select("*");
+    
+    if (query) {
+      baseQuery = baseQuery.ilike("name", `%${query}%`);
+    }
+
+    const { data, error } = await baseQuery
+      .order("name")
+      .limit(limit);
+
+    if (error) {
+      console.error("Supabase Error [searchCategories]:", error.message);
+      return [];
+    }
+
+    return data || [];
+  },
+
+  /**
+   * SERVER-SIDE SEARCH: Brands
+   */
+  async searchBrands(supabase: SupabaseClient, query: string, limit: number = 10): Promise<Brand[]> {
+    let baseQuery = supabase.from("brands").select("*");
+    
+    if (query) {
+      baseQuery = baseQuery.ilike("name", `%${query}%`);
+    }
+
+    const { data, error } = await baseQuery
+      .order("name")
+      .limit(limit);
+
+    if (error) {
+      console.error("Supabase Error [searchBrands]:", error.message);
+      return [];
+    }
+
+    return data || [];
   },
 };

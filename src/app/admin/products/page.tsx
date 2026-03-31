@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { ProductService } from "@/services/productService";
 import { ProductWithDetails } from "@/types/database";
@@ -10,34 +10,33 @@ import { ProductImage } from "@/components/common/ProductImage";
 import { Button } from "@/components/ui/Button";
 import ConfirmationModal from "@/components/common/ConfirmationModal";
 import NotificationModal from "@/components/common/NotificationModal";
+import { useAdminSearch } from "@/hooks/useAdminSearch";
 
 export default function AdminProductsPage() {
-  const [products, setProducts] = useState<ProductWithDetails[]>([]);
-  const [loading, setLoading] = useState(true);
+  const searchFn = useCallback((supabase: any, query: string, limit: number) => 
+    ProductService.searchProducts(supabase, query, limit), []);
+
+  const {
+    searchTerm,
+    setSearchTerm,
+    results: products,
+    loading,
+    refresh: fetchProducts
+  } = useAdminSearch<ProductWithDetails>({
+    searchFn,
+    initialLimit: 20,
+    searchLimit: 20
+  });
+
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<{ id: string; name: string; imageUrl?: string | null } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
   const [notification, setNotification] = useState<{ isOpen: boolean; title: string; message: string; type: "success" | "error" }>({
     isOpen: false,
     title: "",
     message: "",
     type: "success",
   });
-
-  const fetchProducts = async () => {
-    const supabase = createClient();
-    if (supabase) {
-      // Admin sees ALL products (onlyActive = false)
-      const data = await ProductService.getProducts(supabase, false);
-      setProducts(data);
-    }
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    fetchProducts();
-  }, []);
 
   const handleDeleteClick = (id: string, name: string, imageUrl?: string | null) => {
     setProductToDelete({ id, name, imageUrl });
@@ -112,9 +111,6 @@ export default function AdminProductsPage() {
     setIsDeleting(false);
   };
 
-  const filteredProducts = products.filter((p) =>
-    p.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   if (loading) return (
     <div className="flex flex-col items-center justify-center min-h-[400px]">
@@ -162,7 +158,7 @@ export default function AdminProductsPage() {
 
       {/* Grid Layout */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {filteredProducts.map((p) => (
+        {products.map((p) => (
           <div key={p.id} className="group bg-white p-5 rounded-[24px] border border-slate-100 shadow-sm hover:shadow-xl hover:border-primary/20 transition-all duration-500 relative overflow-hidden flex flex-col">
             {/* Background Accent */}
             <div className="absolute top-0 right-0 w-24 h-24 bg-slate-50 rounded-bl-[40px] -z-0 group-hover:bg-primary/5 transition-colors"></div>
@@ -255,7 +251,7 @@ export default function AdminProductsPage() {
       </div>
 
       {/* Empty State */}
-      {filteredProducts.length === 0 && (
+      {products.length === 0 && (
         <div className="py-24 text-center">
           <div className="w-20 h-20 rounded-3xl bg-slate-50 flex items-center justify-center mx-auto mb-6 border border-slate-100">
             <Package size={40} className="text-slate-200" />

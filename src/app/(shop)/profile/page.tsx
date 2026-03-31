@@ -49,9 +49,11 @@ export default function ProfileGeneralPage() {
       if (result.error) {
         setMessage({ type: "err", text: result.error });
       } else {
-        setMessage({ type: "succ", text: "Cập nhật hồ sơ thành công!" });
-        // Auto hide success message
-        setTimeout(() => setMessage(null), 4000);
+        setMessage({ type: "succ", text: "Cập nhật hồ sơ thành công! (Trang sẽ tự động tải lại...)" });
+        // Auto reload after 1 sec to update Header/Session
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
       }
     });
   };

@@ -6,6 +6,7 @@ import { createClient } from "@/utils/supabase/client";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { productSchema, ProductFormData } from "@/lib/validations/product";
+import { getDbErrorMessage } from "@/utils/error-messages";
 
 export function useProductForm(initialData?: Product) {
   const router = useRouter();
@@ -91,13 +92,16 @@ export function useProductForm(initialData?: Product) {
         ? await ProductService.updateProduct(supabase, initialData.id, payload as any)
         : await ProductService.createProduct(supabase, payload as any);
 
-      if (error) throw error;
+      if (error) {
+        return { success: false, message: getDbErrorMessage(error) };
+      }
+
       return {
         success: true,
         message: initialData ? "Cập nhật sản phẩm thành công!" : "Thêm sản phẩm thành công!",
       };
     } catch (err: any) {
-      return { success: false, message: err.message };
+      return { success: false, message: getDbErrorMessage(err) };
     } finally {
       setLoading(false);
     }

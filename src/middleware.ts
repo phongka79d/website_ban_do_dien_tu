@@ -89,8 +89,8 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // Auth: Redirect logged-in users away from auth pages
-  if (user && (request.nextUrl.pathname === "/login" || request.nextUrl.pathname === "/register")) {
+  // Auth: Redirect logged-in and confirmed users away from auth pages
+  if (user && user.email_confirmed_at && (request.nextUrl.pathname === "/login" || request.nextUrl.pathname === "/register")) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 

@@ -18,6 +18,15 @@ export const productSchema = z.object({
   description: trimString.optional().nullable(),
   has_installment_0: z.boolean(),
   specs: z.record(z.string(), z.any()),
+}).refine((data) => {
+  // Nếu có giá gốc, thì giá bán (price) không được lớn hơn giá gốc
+  if (data.original_price && data.price > data.original_price) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Giá bán không được lớn hơn giá gốc.",
+  path: ["price"], // Hiển thị lỗi tại ô nhập giá bán
 });
 
 // Infer types from the schema

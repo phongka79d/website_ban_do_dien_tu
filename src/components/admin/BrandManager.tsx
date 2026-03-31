@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { ProductService } from "@/services/productService";
 import { Brand } from "@/types/database";
@@ -17,11 +17,23 @@ import { Card } from "../ui/Card";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { brandSchema, BrandFormData } from "@/lib/validations/brand";
+import { useAdminSearch } from "@/hooks/useAdminSearch";
 
 export default function BrandManager() {
-  const [brands, setBrands] = useState<Brand[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
+  const searchFn = useCallback((supabase: any, query: string, limit: number) => 
+    ProductService.searchBrands(supabase, query, limit), []);
+
+  const {
+    searchTerm,
+    setSearchTerm,
+    results: brands,
+    loading,
+    refresh: fetchBrands
+  } = useAdminSearch<Brand>({
+    searchFn,
+    initialLimit: 20,
+    searchLimit: 20
+  });
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -42,19 +54,6 @@ export default function BrandManager() {
   } = useForm<BrandFormData>({
     resolver: zodResolver(brandSchema),
   });
-
-  const fetchBrands = async () => {
-    setLoading(true);
-    const supabase = createClient();
-    if (supabase) {
-      // Admin sees ALL brands
-      const data = await ProductService.getBrands(supabase, false);
-      setBrands(data);
-    }
-    setLoading(false);
-  };
-
-  useEffect(() => { fetchBrands(); }, []);
 
   const handleCreate = () => {
     reset({ name: "", logo_url: "" });
@@ -148,8 +147,6 @@ export default function BrandManager() {
 
   const brandLogoUrl = watch("logo_url");
 
-  const filteredBrands = brands.filter((b) => b.name.toLowerCase().includes(searchTerm.toLowerCase()));
-
   return (
     <>
       <AdminManagerShell
@@ -159,12 +156,12 @@ export default function BrandManager() {
         onAdd={handleCreate}
         addLabel="Thêm thương hiệu"
         loading={loading}
-        isEmpty={filteredBrands.length === 0}
+        isEmpty={brands.length === 0}
         emptyIcon={<Tags size={48} />}
         emptyText="Không tìm thấy thương hiệu nào"
       >
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredBrands.map((brand) => (
+          {brands.map((brand) => (
             <Card 
               key={brand.id} 
               variant="flat" 

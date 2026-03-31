@@ -2,7 +2,7 @@ import React from "react";
 import { Clock, Package, Truck, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
 import { cn } from "@/utils/cn";
 
-export type OrderStatus = "pending" | "processing" | "shipping" | "shipped" | "delivered" | "completed" | "cancelled";
+export type OrderStatus = "pending" | "processing" | "shipped" | "delivered" | "cancelled";
 
 interface OrderStatusBadgeProps {
   status: string;
@@ -13,10 +13,8 @@ interface OrderStatusBadgeProps {
 export const statusConfigs: Record<string, { label: string; color: string; icon: any }> = {
   pending: { label: "Chờ xác nhận", color: "text-amber-500 bg-amber-50 border-amber-100", icon: Clock },
   processing: { label: "Đang xử lý", color: "text-blue-500 bg-blue-50 border-blue-100", icon: Package },
-  shipping: { label: "Đang chuẩn bị", color: "text-indigo-500 bg-indigo-50 border-indigo-100", icon: Truck },
   shipped: { label: "Đang giao hàng", color: "text-indigo-500 bg-indigo-50 border-indigo-100", icon: Truck },
   delivered: { label: "Giao thành công", color: "text-emerald-500 bg-emerald-50 border-emerald-100", icon: CheckCircle2 },
-  completed: { label: "Hoàn tất", color: "text-emerald-500 bg-emerald-50 border-emerald-100", icon: CheckCircle2 },
   cancelled: { label: "Đã hủy", color: "text-red-500 bg-red-50 border-red-100", icon: XCircle },
 };
 

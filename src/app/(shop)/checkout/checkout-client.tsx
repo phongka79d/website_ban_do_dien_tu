@@ -37,7 +37,7 @@ export default function CheckoutClient({ user, initialItems }: CheckoutClientPro
   const [formData, setFormData] = useState({
     shippingAddress: "",
     phoneNumber: user.phone || "",
-    paymentMethod: "COD"
+    paymentMethod: "cod"
   });
 
   const totalAmount = initialItems.reduce((acc, item) => 
@@ -202,8 +202,8 @@ export default function CheckoutClient({ user, initialItems }: CheckoutClientPro
                         <input 
                             type="radio" 
                             name="paymentMethod" 
-                            value="COD" 
-                            checked={formData.paymentMethod === 'COD'}
+                            value="cod" 
+                            checked={formData.paymentMethod === 'cod'}
                             onChange={handleInputChange}
                             className="w-5 h-5 accent-primary"
                         />
@@ -220,9 +220,9 @@ export default function CheckoutClient({ user, initialItems }: CheckoutClientPro
                         <input 
                             type="radio" 
                             name="paymentMethod" 
-                            value="BANK" 
+                            value="bank" 
                             disabled
-                            checked={formData.paymentMethod === 'BANK'}
+                            checked={formData.paymentMethod === 'bank'}
                             onChange={handleInputChange}
                             className="w-5 h-5 accent-primary"
                         />
@@ -278,7 +278,7 @@ export default function CheckoutClient({ user, initialItems }: CheckoutClientPro
                         </div>
                         <div className="flex justify-between items-start">
                             <span className="text-xs font-bold text-slate-400 uppercase">Hình thức</span>
-                            <span className="text-sm font-bold text-slate-900">{formData.paymentMethod === 'COD' ? 'Tiền mặt' : 'Chuyển khoản'}</span>
+                            <span className="text-sm font-bold text-slate-900">{formData.paymentMethod === 'cod' ? 'Tiền mặt' : 'Chuyển khoản'}</span>
                         </div>
                     </div>
 
