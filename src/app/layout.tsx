@@ -12,8 +12,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "QuizLM Store | Cửa hàng công nghệ",
-  description: "Trải nghiệm mua sắm công nghệ hiện đại phong cách QuizLM",
+  title: "TSShop | Cửa hàng công nghệ",
+  description: "Trải nghiệm mua sắm công nghệ hiện đại phong cách TSShop",
 };
 
 export default function RootLayout({

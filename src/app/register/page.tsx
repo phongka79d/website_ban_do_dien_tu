@@ -121,7 +121,7 @@ export default function RegisterPage() {
     <AuthCard>
       <div className="relative mb-8 text-center">
         <h1 className="text-3xl font-black tracking-tight text-slate-900">
-          Gia nhập QuizLM<span className="text-secondary">.</span>
+          Gia nhập TSShop
         </h1>
         <p className="mt-2 text-sm font-medium text-slate-500">
           Đăng ký tài khoản để nhận nhiều ưu đãi SMember

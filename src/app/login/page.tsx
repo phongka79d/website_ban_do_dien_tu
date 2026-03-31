@@ -58,7 +58,7 @@ export default function LoginPage() {
           Chào mừng trở lại<span className="text-primary">.</span>
         </h1>
         <p className="mt-2 text-sm font-medium text-slate-500">
-          Đăng nhập để trải nghiệm công nghệ cùng QuizLM
+          Đăng nhập để trải nghiệm công nghệ cùng TSShop
         </p>
       </div>
 

@@ -8,7 +8,7 @@ export type SortBy = "default" | "hot" | "discount" | "price_asc" | "price_desc"
 export const SORT_OPTIONS = [
   { name: "Tất cả", value: "all" },
   { name: "Đang hot", value: "hot" },
-  { name: "Giảm giá sâu", value: "discount" },
+  { name: "Giá tốt", value: "discount" },
   { name: "Giá thấp đến cao", value: "price_asc" },
   { name: "Giá cao đến thấp", value: "price_desc" },
 ];

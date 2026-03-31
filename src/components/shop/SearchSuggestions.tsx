@@ -53,7 +53,7 @@ export default function SearchSuggestions({
                 {suggestions.map((product) => (
                   <Link
                     key={product.id}
-                    href={`/product/${product.id}`}
+                    href={`/products/${product.id}`}
                     onClick={onClose}
                     className="group flex items-center gap-3 rounded-xl p-2 transition-colors hover:bg-slate-50"
                   >

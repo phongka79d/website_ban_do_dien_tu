@@ -151,7 +151,9 @@ export default function Header() {
         {/* Logo & Category */}
         <div className="flex items-center gap-4">
           <div className="text-2xl font-black tracking-tighter text-primary">
-            QuizLM<span className="text-secondary italic">.Store</span>
+            <Link href="/">
+              TS<span className="text-secondary italic">Shop</span>
+            </Link>
           </div>
           <button
             onClick={() => setIsCategoryOpen(!isCategoryOpen)}
@@ -253,7 +255,7 @@ export default function Header() {
             </div>
           ) : (
             <Link href="/login">
-              <HeaderAction icon={<User size={20} />} label="Thông tin" subLabel="Bản thân" />
+              <HeaderAction icon={<User size={20} />} label="Thành viên" subLabel="TSShop" />
             </Link>
           )}
 

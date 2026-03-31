@@ -57,7 +57,7 @@ export default function Footer() {
           {/* Brand & Contact */}
           <div className="space-y-6">
             <div className="text-2xl font-black tracking-tighter text-primary">
-              QuizLM<span className="text-secondary italic">.Store</span>
+              TSShop
             </div>
             <p className="text-slate-500 text-sm leading-relaxed">
               Hệ thống bán lẻ điện thoại, laptop, phụ kiện chính hãng với giá tốt nhất thị trường. 
@@ -65,7 +65,7 @@ export default function Footer() {
             </p>
             <div className="space-y-3">
               <ContactLink icon={<Phone size={18} />} text="1800.2097" subText="(Miễn phí)" />
-              <ContactLink icon={<Mail size={18} />} text="contact@quizlm.store" />
+              <ContactLink icon={<Mail size={18} />} text="contact@tsshop.store" />
               <ContactLink icon={<MapPin size={18} />} text="123 Ba Tháng Hai, Quận 10, TP.HCM" />
             </div>
           </div>
@@ -126,7 +126,7 @@ export default function Footer() {
 
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-slate-50 flex flex-col md:flex-row justify-between items-center gap-4 text-slate-400 text-[12px] font-medium">
-          <p>© 2026 QuizLM Store. Tất cả quyền được bảo lưu.</p>
+          <p>© 2026 TSShop. Tất cả quyền được bảo lưu.</p>
           <div className="flex gap-8">
             <span className="hover:text-primary cursor-pointer transition-colors">Điều khoản</span>
             <span className="hover:text-primary cursor-pointer transition-colors">Bảo mật</span>
