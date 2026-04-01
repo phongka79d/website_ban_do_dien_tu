@@ -1,4 +1,4 @@
-# Antigravity E-commerce Platform
+# E-commerce Platform
 
 ![Antigravity Hero Banner](public/v-assets/hero.png)
 
