@@ -11,10 +11,10 @@ interface AdminManagerShellProps {
   onSearch: (value: string) => void;
   /** Placeholder cho ô tìm kiếm */
   searchPlaceholder?: string;
-  /** Callback khi bấm nút "Thêm mới" */
-  onAdd: () => void;
-  /** Nhãn nút thêm mới */
-  addLabel: string;
+  /** Callback khi bấm nút "Thêm mới" (Tùy chọn) */
+  onAdd?: () => void;
+  /** Nhãn nút thêm mới (Tùy chọn) */
+  addLabel?: string;
   /** Đang tải dữ liệu */
   loading: boolean;
   /** Không có kết quả (sau khi filter) */
@@ -29,8 +29,6 @@ interface AdminManagerShellProps {
 
 /**
  * AdminManagerShell — Shell layout dùng chung cho các trang CRUD Admin.
- * Bao gồm: Search bar, nút Thêm mới, Loading spinner, Empty state.
- * Phần List/Grid content truyền qua `children`.
  */
 export default function AdminManagerShell({
   searchTerm,
@@ -62,14 +60,16 @@ export default function AdminManagerShell({
           />
         </div>
 
-        <Button
-          onClick={onAdd}
-          size="default"
-          leftIcon={<Plus size={18} />}
-          className="w-full md:w-auto"
-        >
-          {addLabel}
-        </Button>
+        {onAdd && addLabel && (
+          <Button
+            onClick={onAdd}
+            size="default"
+            leftIcon={<Plus size={18} />}
+            className="w-full md:w-auto"
+          >
+            {addLabel}
+          </Button>
+        )}
       </div>
 
       {/* Loading spinner */}

@@ -8,9 +8,11 @@ import { ProductImage } from "@/components/common/ProductImage";
 
 interface CartItemProps {
   item: CartItemType;
+  isSelected?: boolean;
+  onToggle?: () => void;
 }
 
-export default function CartItem({ item }: CartItemProps) {
+export default function CartItem({ item, isSelected = false, onToggle }: CartItemProps) {
   const { updateQuantity, removeItem } = useCartStore();
   const product = item.products;
 
@@ -21,7 +23,17 @@ export default function CartItem({ item }: CartItemProps) {
   };
 
   return (
-    <div className="flex gap-4 py-4 border-b border-slate-100 last:border-0 group animate-in slide-in-from-right-4 duration-300">
+    <div className={`flex gap-4 py-4 border-b border-slate-100 last:border-0 group animate-in slide-in-from-right-4 duration-300 ${!isSelected ? "opacity-70 grayscale-[0.5]" : ""}`}>
+      {/* Selection Checkbox */}
+      <div className="flex items-center">
+        <input 
+          type="checkbox" 
+          checked={isSelected}
+          onChange={onToggle}
+          className="w-5 h-5 rounded-md border-slate-300 focus:ring-primary text-primary cursor-pointer accent-primary"
+        />
+      </div>
+
       {/* Product Image */}
       <div className="relative w-24 h-24 rounded-2xl bg-slate-50 overflow-hidden border border-slate-100 shrink-0">
         <ProductImage
@@ -55,8 +67,11 @@ export default function CartItem({ item }: CartItemProps) {
           {/* Quantity Controls */}
           <div className="flex items-center bg-slate-100 rounded-lg p-1">
             <button
-              onClick={() => updateQuantity(item.id, item.quantity - 1)}
-              className="p-1 text-slate-500 hover:text-slate-900 transition-colors"
+              onClick={() => item.quantity > 1 && updateQuantity(item.id, item.quantity - 1)}
+              disabled={item.quantity <= 1}
+              className={`p-1 transition-colors ${
+                item.quantity <= 1 ? "text-slate-200 cursor-not-allowed" : "text-slate-500 hover:text-slate-900"
+              }`}
             >
               <Minus size={14} />
             </button>

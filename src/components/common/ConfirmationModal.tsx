@@ -13,6 +13,8 @@ interface ConfirmationModalProps {
   cancelText?: string;
   type?: "danger" | "info" | "success";
   loading?: boolean;
+  children?: React.ReactNode;
+  showConfirm?: boolean;
 }
 
 /**
@@ -29,6 +31,8 @@ export default function ConfirmationModal({
   cancelText = "Hủy bỏ",
   type = "danger",
   loading = false,
+  children,
+  showConfirm = true,
 }: ConfirmationModalProps) {
   // Prevent scrolling when modal is open
   useEffect(() => {
@@ -85,19 +89,27 @@ export default function ConfirmationModal({
             {title}
           </h3>
 
-          <p className="mb-10 text-slate-500 leading-relaxed font-medium">
+          <p className="mb-6 text-slate-500 leading-relaxed font-medium">
             {message}
           </p>
 
+          {children && (
+            <div className="w-full mb-10 text-left animate-in fade-in slide-in-from-bottom-2 duration-500">
+              {children}
+            </div>
+          )}
+
           {/* Actions */}
           <div className="flex w-full flex-col gap-3">
-            <button
-              onClick={onConfirm}
-              disabled={loading}
-              className={`w-full rounded-2xl py-4 text-base font-black text-white shadow-lg transition-all hover:scale-[1.02] active:scale-95 disabled:grayscale disabled:scale-100 cursor-pointer ${currentTheme.button}`}
-            >
-              {loading ? "ĐANG XỬ LÝ..." : confirmText.toUpperCase()}
-            </button>
+            {showConfirm && (
+              <button
+                onClick={onConfirm}
+                disabled={loading}
+                className={`w-full rounded-2xl py-4 text-base font-black text-white shadow-lg transition-all hover:scale-[1.02] active:scale-95 disabled:grayscale disabled:scale-100 cursor-pointer ${currentTheme.button}`}
+              >
+                {loading ? "ĐANG XỬ LÝ..." : confirmText.toUpperCase()}
+              </button>
+            )}
             <button
               onClick={onClose}
               disabled={loading}

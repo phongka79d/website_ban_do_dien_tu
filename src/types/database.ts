@@ -109,6 +109,7 @@ export type CartWithItems = Cart & {
 export interface Order {
   id: string;
   user_id: string;
+  full_name: string;
   status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
   total_amount: number;
   shipping_address: string;
@@ -133,3 +134,15 @@ export interface OrderItem {
 export type OrderWithItems = Order & {
   order_items: OrderItem[];
 };
+
+export interface Profile {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  phone: string | null;
+  role: 'admin' | 'user';
+  is_active: boolean;
+  avatar_url: string | null;
+  created_at: string;
+  updated_at: string;
+}

@@ -3,13 +3,13 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { 
-  LayoutDashboard, 
-  Package, 
-  ShoppingCart, 
-  Users, 
-  Settings, 
-  LogOut, 
+import {
+  LayoutDashboard,
+  Package,
+  ShoppingCart,
+  Users,
+  Settings,
+  LogOut,
   ChevronRight,
   Store,
   Grid,
@@ -21,45 +21,45 @@ export function AdminSidebar() {
   const pathname = usePathname();
 
   const menuItems = [
-    { 
-      name: "Dashboard", 
-      icon: <LayoutDashboard size={20} />, 
-      href: "/admin" 
+    {
+      name: "Dashboard",
+      icon: <LayoutDashboard size={20} />,
+      href: "/admin"
     },
-    { 
-      name: "Quản lý Sản phẩm", 
-      icon: <Package size={20} />, 
-      href: "/admin/products" 
+    {
+      name: "Quản lý Sản phẩm",
+      icon: <Package size={20} />,
+      href: "/admin/products"
     },
-    { 
-      name: "Danh mục", 
-      icon: <Grid size={20} />, 
-      href: "/admin/categories" 
+    {
+      name: "Danh mục",
+      icon: <Grid size={20} />,
+      href: "/admin/categories"
     },
-    { 
-      name: "Thương hiệu", 
-      icon: <Tags size={20} />, 
-      href: "/admin/brands" 
+    {
+      name: "Thương hiệu",
+      icon: <Tags size={20} />,
+      href: "/admin/brands"
     },
-    { 
-      name: "Banner Carousel", 
-      icon: <ImageIcon size={20} />, 
-      href: "/admin/banners" 
+    {
+      name: "Banner Carousel",
+      icon: <ImageIcon size={20} />,
+      href: "/admin/banners"
     },
-    { 
-      name: "Đơn hàng", 
-      icon: <ShoppingCart size={20} />, 
-      href: "/admin/orders" 
+    {
+      name: "Đơn hàng",
+      icon: <ShoppingCart size={20} />,
+      href: "/admin/orders"
     },
-    { 
-      name: "Khách hàng", 
-      icon: <Users size={20} />, 
-      href: "/admin/users" 
+    {
+      name: "Khách hàng",
+      icon: <Users size={20} />,
+      href: "/admin/users"
     },
-    { 
-      name: "Cài đặt", 
-      icon: <Settings size={20} />, 
-      href: "/admin/settings" 
+    {
+      name: "Cài đặt",
+      icon: <Settings size={20} />,
+      href: "/admin/settings"
     },
   ];
 
@@ -71,7 +71,9 @@ export function AdminSidebar() {
             <Store size={24} />
           </div>
           <div>
-            <h2 className="font-black text-slate-900 text-xl tracking-tight leading-none">Antigravity</h2>
+            <Link href="/admin">
+              <h2 className="font-black text-slate-900 text-xl tracking-tight leading-none">TSShop</h2>
+            </Link>
             <p className="text-[10px] font-black uppercase tracking-widest text-primary mt-1">Admin Panel</p>
           </div>
         </div>
@@ -79,16 +81,15 @@ export function AdminSidebar() {
         <nav className="space-y-1.5">
           {menuItems.map((item) => {
             const isActive = pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href));
-            
+
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center justify-between p-4 rounded-xl transition-all duration-300 group ${
-                  isActive 
-                    ? "bg-slate-50 text-primary font-bold shadow-sm" 
-                    : "text-slate-400 hover:bg-slate-50 hover:text-slate-600"
-                }`}
+                className={`flex items-center justify-between p-4 rounded-xl transition-all duration-300 group ${isActive
+                  ? "bg-slate-50 text-primary font-bold shadow-sm"
+                  : "text-slate-400 hover:bg-slate-50 hover:text-slate-600"
+                  }`}
               >
                 <div className="flex items-center gap-3">
                   <span className={`transition-transform duration-300 ${isActive ? "scale-110" : "group-hover:scale-110"}`}>
@@ -104,7 +105,7 @@ export function AdminSidebar() {
       </div>
 
       <div className="mt-auto p-6 border-t border-slate-50">
-        <Link 
+        <Link
           href="/"
           className="flex items-center gap-3 p-4 rounded-xl text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all duration-300 group"
         >

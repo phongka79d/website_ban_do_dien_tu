@@ -136,16 +136,16 @@ export default function TrackOrderPage() {
                 <div className="flex justify-between items-center mb-10 px-4">
                   {['pending', 'processing', 'shipping', 'completed'].map((s, idx) => {
                     const statusMapping: Record<string, string[]> = {
-                        'pending': ['pending'],
-                        'processing': ['pending', 'processing'],
-                        'shipping': ['pending', 'processing', 'shipping'],
-                        'shipped': ['pending', 'processing', 'shipping'],
-                        'delivered': ['pending', 'processing', 'shipping', 'completed'],
-                        'completed': ['pending', 'processing', 'shipping', 'completed']
+                      'pending': ['pending'],
+                      'processing': ['pending', 'processing'],
+                      'shipping': ['pending', 'processing', 'shipping'],
+                      'shipped': ['pending', 'processing', 'shipping'],
+                      'delivered': ['pending', 'processing', 'shipping', 'completed'],
+                      'completed': ['pending', 'processing', 'shipping', 'completed']
                     };
                     const activeStages = statusMapping[order.status] || [];
                     const isActive = activeStages.includes(s);
-                    
+
                     return (
                       <div key={s} className="flex flex-col items-center gap-2 relative last:flex-1 last:items-end flex-1 first:items-start items-center">
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all ${isActive ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20 scale-110' : 'bg-white border-slate-200 text-slate-300'
@@ -224,9 +224,6 @@ export default function TrackOrderPage() {
               <h2 className="text-2xl font-black text-red-900 mb-2">Không tìm thấy đơn hàng</h2>
               <p className="text-red-600/70 mb-8 max-w-sm mx-auto">{error}</p>
               <div className="flex flex-col gap-3 max-w-xs mx-auto">
-                <Button onClick={() => setError(null)} variant="outline" className="rounded-2xl border-red-200 text-red-700 hover:bg-red-50">
-                  Thử lại
-                </Button>
               </div>
             </motion.div>
           ) : null}

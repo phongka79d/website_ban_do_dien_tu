@@ -63,6 +63,8 @@ export const useCartStore = create<CartState>((set, get) => ({
   },
 
   updateQuantity: async (itemId, quantity) => {
+    if (quantity < 1) return; // Safeguard: Min quantity is 1. 2.0
+
     const supabase = createClient();
     if (!supabase) return;
 
@@ -70,7 +72,7 @@ export const useCartStore = create<CartState>((set, get) => ({
     if (success) {
       const items = get().items.map((item) =>
         item.id === itemId ? { ...item, quantity } : item
-      ).filter(item => item.quantity > 0);
+      );
       set({ items });
     }
   },

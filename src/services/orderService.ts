@@ -241,4 +241,46 @@ export class OrderService {
 
     return (data as OrderWithItems[]) || [];
   }
+
+  /**
+   * Tìm kiếm đơn hàng với Phân trang (Dành cho Admin)
+   */
+  static async searchOrders(
+    supabase: SupabaseClient, 
+    query: string,
+    page: number = 1,
+    pageSize: number = 20
+  ): Promise<{ data: OrderWithItems[]; count: number }> {
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+
+    let baseQuery = supabase
+      .from("orders")
+      .select(`
+        *,
+        order_items (
+          *,
+          products (*)
+        )
+      `, { count: "exact" });
+    
+    if (query) {
+      // Tìm theo Tên, Số điện thoại hoặc Địa chỉ
+      baseQuery = baseQuery.or(`full_name.ilike.%${query}%,phone_number.ilike.%${query}%,shipping_address.ilike.%${query}%`);
+    }
+
+    const { data, error, count } = await baseQuery
+      .order("created_at", { ascending: false })
+      .range(from, to);
+
+    if (error) {
+      console.error("Supabase Error [searchOrders]:", error.message);
+      return { data: [], count: 0 };
+    }
+
+    return { 
+      data: (data as OrderWithItems[]) || [], 
+      count: count || 0 
+    };
+  }
 }

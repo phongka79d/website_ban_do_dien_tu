@@ -15,6 +15,9 @@ interface AddToCartButtonProps {
   className?: string;
   showIcon?: boolean;
   label?: string;
+  quantity?: number;
+  onSuccess?: () => void;
+  leftIcon?: React.ReactNode;
 }
 
 export function AddToCartButton({ 
@@ -22,7 +25,10 @@ export function AddToCartButton({
   variant = "primary", 
   className = "", 
   showIcon = true,
-  label = "Thêm vào giỏ" 
+  label = "Thêm vào giỏ",
+  quantity = 1,
+  onSuccess,
+  leftIcon
 }: AddToCartButtonProps) {
   const router = useRouter();
   const { addItem } = useCartStore();
@@ -51,10 +57,15 @@ export function AddToCartButton({
     }
 
     try {
-      await addItem(product);
+      await addItem(product, quantity);
       
       // Kích hoạt hiệu ứng bay
       setIsFlying(true);
+      
+      // Gọi callback thành công (nếu có) để nhảy sang trang checkout
+      if (onSuccess) {
+        onSuccess();
+      }
       
       // Tự động tắt element bay sau khi hoàn tất animation
       setTimeout(() => {
@@ -92,8 +103,8 @@ export function AddToCartButton({
         variant={variant}
         className={`relative font-black uppercase tracking-widest text-[13px] rounded-2xl transition-all active:scale-95 ${className}`}
         onClick={handleAddToCart}
-        disabled={isAdding || product.stock_quantity === 0}
-        leftIcon={isAdding ? <Loader2 className="animate-spin" size={20} /> : (showIcon && <ShoppingBag size={20} />)}
+        disabled={isAdding || (product.stock_quantity === 0)}
+        leftIcon={isAdding ? <Loader2 className="animate-spin" size={20} /> : (leftIcon || (showIcon && <ShoppingBag size={20} />))}
       >
         {isAdding ? "Đang xử lý..." : (product.stock_quantity === 0 ? "Hết hàng" : label)}
       </Button>

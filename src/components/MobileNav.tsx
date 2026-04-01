@@ -32,7 +32,6 @@ export default function MobileNav() {
 
   // Hide Bottom Nav on Admin pages
   if (pathname?.startsWith("/admin")) return null;
-
   return (
     <div className="fixed bottom-0 left-0 right-0 z-[60] block border-t border-slate-100 bg-white/80 pb-safe backdrop-blur-lg md:hidden">
       <nav className="flex items-center justify-around px-2 py-2">

@@ -3,8 +3,13 @@ import { redirect } from "next/navigation";
 import { CartService } from "@/services/cartService";
 import CheckoutClient from "./checkout-client";
 
-export default async function CheckoutPage() {
+interface PageProps {
+  searchParams: Promise<{ item_ids?: string }>;
+}
+
+export default async function CheckoutPage({ searchParams }: PageProps) {
   const supabase = await createClient();
+  const { item_ids } = await searchParams;
 
   if (!supabase) {
     redirect("/login?error=conn_failed");
@@ -16,9 +21,18 @@ export default async function CheckoutPage() {
     redirect("/login?error=auth_required");
   }
 
-  // Lấy giỏ hàng thực tế từ Database để đảm bảo tính chính xác
+  // Lấy giỏ hàng thực tế từ Database
   const cartId = await CartService.getOrCreateCart(supabase, user.id);
-  const cartItems = await CartService.fetchCartItems(supabase, cartId);
+  let cartItems = await CartService.fetchCartItems(supabase, cartId);
+
+  // Lọc sản phẩm dựa trên ID được chọn từ URL. 2.0
+  if (item_ids) {
+    const selectedIds = item_ids.split(",");
+    cartItems = cartItems.filter(item => selectedIds.includes(item.id));
+  } else {
+    // Nếu không có ID nào được truyền trực tiếp, quay lại giỏ hàng để chọn
+    redirect("/cart");
+  }
 
   if (cartItems.length === 0) {
     redirect("/cart");

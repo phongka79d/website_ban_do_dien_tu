@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ProductImage } from "@/components/common/ProductImage";
 import { ChevronRight, Truck, ShieldCheck } from "lucide-react";
-import { AddToCartButton } from "@/components/cart/AddToCartButton";
+import { ProductActionBlock } from "./ProductActionBlock";
 
 export default async function ProductDetail(props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
@@ -85,16 +85,16 @@ export default async function ProductDetail(props: { params: Promise<{ id: strin
                 {product.name}
               </h1>
 
-              {/* Price Block */}
-              <div className="flex items-end gap-4 mb-8">
-                <div className="text-4xl lg:text-5xl font-black text-primary tracking-tight">
-                  {formatPrice(product.price)}
-                </div>
+              {/* Price Block: Stacked for better readability */}
+              <div className="flex flex-col gap-0.5 mb-8">
                 {(product.original_price ?? 0) > product.price && (
-                  <div className="text-xl text-slate-400 font-medium line-through mb-1">
+                  <div className="text-xl text-slate-400 font-medium line-through decoration-slate-300 decoration-[1.5px]">
                     {formatPrice(product.original_price!)}
                   </div>
                 )}
+                <div className="text-4xl lg:text-5xl font-black text-primary tracking-tight transition-transform duration-500 hover:scale-[1.02] origin-left">
+                  {formatPrice(product.price)}
+                </div>
               </div>
 
               {/* Promotion / Tóm tắt */}
@@ -111,11 +111,7 @@ export default async function ProductDetail(props: { params: Promise<{ id: strin
 
               {/* Action Block */}
               <div className="mt-auto space-y-4 pt-8">
-                <AddToCartButton 
-                  product={product} 
-                  className="w-full py-8 text-[15px]" 
-                  label="Mua ngay"
-                />
+                <ProductActionBlock product={product} />
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex items-center gap-3 p-4 rounded-2xl bg-slate-50 border border-slate-100">

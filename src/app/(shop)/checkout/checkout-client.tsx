@@ -17,10 +17,22 @@ import {
   User, 
   ArrowRight,
   Loader2,
-  PackageCheck
+  PackageCheck,
+  AlertCircle
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ProductImage } from "@/components/common/ProductImage";
+import { z } from "zod";
+
+// Định nghĩa schema validation bằng Zod. 2.0
+const checkoutSchema = z.object({
+  shippingAddress: z.string().min(10, "Địa chỉ chi tiết phải có ít nhất 10 ký tự"),
+  phoneNumber: z.string()
+    .min(9, "Số điện thoại phải có ít nhất 9 số")
+    .max(11, "Số điện thoại không được quá 11 số")
+    .regex(/^\d+$/, "Số điện thoại chỉ được chứa các chữ số"),
+  paymentMethod: z.string()
+});
 
 interface CheckoutClientProps {
   user: any;
@@ -32,11 +44,12 @@ export default function CheckoutClient({ user, initialItems }: CheckoutClientPro
   const { clearCart } = useCartStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [step, setStep] = useState(1);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const supabase = createClient();
 
   const [formData, setFormData] = useState({
     shippingAddress: "",
-    phoneNumber: user.phone || "",
+    phoneNumber: user.user_metadata?.phone || user.phone || "",
     paymentMethod: "cod"
   });
 
@@ -47,13 +60,39 @@ export default function CheckoutClient({ user, initialItems }: CheckoutClientPro
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    // Xóa lỗi khi người dùng bắt đầu sửa
+    if (errors[name]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
+  };
+
+  const validateStep1 = () => {
+    const result = checkoutSchema.safeParse(formData);
+    if (!result.success) {
+      const newErrors: Record<string, string> = {};
+      result.error.issues.forEach(issue => {
+        if (issue.path[0]) newErrors[issue.path[0] as string] = issue.message;
+      });
+      setErrors(newErrors);
+      return false;
+    }
+    setErrors({});
+    return true;
+  };
+
+  const handleNextStep = () => {
+    if (validateStep1()) {
+      setStep(2);
+    }
   };
 
   const handleSubmit = async () => {
-    if (!formData.shippingAddress || !formData.phoneNumber) {
-      alert("Vui lòng nhập đầy đủ thông tin giao hàng!");
-      return;
-    }
+    const isValid = validateStep1();
+    if (!isValid) return;
 
     setIsSubmitting(true);
     try {
@@ -133,46 +172,81 @@ export default function CheckoutClient({ user, initialItems }: CheckoutClientPro
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                        <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Họ và Tên</label>
-                        <input 
-                            type="text" 
-                            disabled 
-                            value={user.user_metadata?.full_name || "User"}
-                            className="w-full h-12 px-4 rounded-xl bg-slate-50 border border-slate-100 text-slate-500 cursor-not-allowed"
-                        />
+                        <label htmlFor="fullName" className="text-xs font-bold uppercase tracking-wider text-slate-400">Họ và Tên</label>
+                        <div className="relative group/user">
+                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300">
+                                <User size={18} />
+                            </div>
+                            <input 
+                                id="fullName"
+                                type="text" 
+                                disabled 
+                                value={user.user_metadata?.full_name || "User"}
+                                className="w-full h-12 pl-12 pr-4 rounded-xl bg-slate-50 border border-slate-100 text-slate-500 cursor-not-allowed font-bold"
+                            />
+                        </div>
                     </div>
                     <div className="space-y-2">
-                        <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Số điện thoại</label>
-                        <input 
-                            name="phoneNumber"
-                            type="tel" 
-                            value={formData.phoneNumber}
-                            onChange={handleInputChange}
-                            placeholder="Nhập số điện thoại"
-                            className="w-full h-12 px-4 rounded-xl bg-white border border-slate-200 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-                        />
+                        <label htmlFor="phoneNumber" className="text-xs font-bold uppercase tracking-wider text-slate-400">Số điện thoại</label>
+                        <div className="relative group/phone">
+                          <div className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${
+                              errors.phoneNumber ? "text-red-400" : "text-slate-400 group-focus-within/phone:text-primary"
+                          }`}>
+                              <Phone size={18} />
+                          </div>
+                          <input 
+                              id="phoneNumber"
+                              name="phoneNumber"
+                              type="tel" 
+                              inputMode="numeric"
+                              autoComplete="tel"
+                              minLength={9}
+                              maxLength={11}
+                              value={formData.phoneNumber}
+                              onChange={handleInputChange}
+                              placeholder="Nhập số điện thoại"
+                              className={`w-full h-12 pl-12 pr-4 rounded-xl bg-white border outline-none transition-all ${
+                                errors.phoneNumber ? "border-red-500 focus:ring-red-500 shadow-[0_0_0_1px_rgba(239,68,68,0.2)]" : "border-slate-200 focus:border-primary focus:ring-primary shadow-sm"
+                              }`}
+                          />
+                          {errors.phoneNumber && (
+                            <div className="flex items-center gap-1 mt-1 text-red-500 text-[10px] font-bold animate-in fade-in slide-in-from-top-1">
+                              <AlertCircle size={12} />
+                              {errors.phoneNumber}
+                            </div>
+                          )}
+                        </div>
                     </div>
                   </div>
 
                   <div className="space-y-2">
                     <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Địa chỉ chi tiết</label>
-                    <textarea 
-                        name="shippingAddress"
-                        value={formData.shippingAddress}
-                        onChange={handleInputChange}
-                        rows={3}
-                        placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố..."
-                        className="w-full p-4 rounded-xl bg-white border border-slate-200 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-                    />
+                    <div className="relative">
+                      <textarea 
+                          name="shippingAddress"
+                          value={formData.shippingAddress}
+                          onChange={handleInputChange}
+                          rows={3}
+                          placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố..."
+                          className={`w-full p-4 rounded-xl bg-white border outline-none transition-all ${
+                            errors.shippingAddress ? "border-red-500 focus:ring-red-500 shadow-[0_0_0_1px_rgba(239,68,68,0.2)]" : "border-slate-200 focus:border-primary focus:ring-primary shadow-sm"
+                          }`}
+                      />
+                      {errors.shippingAddress && (
+                        <div className="flex items-center gap-1 mt-1 text-red-500 text-[10px] font-bold animate-in fade-in slide-in-from-top-1">
+                          <AlertCircle size={12} />
+                          {errors.shippingAddress}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
                 <div className="mt-8 flex justify-end">
                     <Button 
                         size="lg" 
-                        onClick={() => setStep(2)}
-                        disabled={!formData.shippingAddress || !formData.phoneNumber}
-                        className="rounded-full px-8"
+                        onClick={handleNextStep}
+                        className="rounded-full px-8 shadow-lg shadow-primary/20"
                         rightIcon={<ArrowRight size={18} />}
                     >
                         Tiếp theo
