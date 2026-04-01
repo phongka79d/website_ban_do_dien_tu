@@ -68,48 +68,50 @@ export default function Carousel({ banners }: CarouselProps) {
       className="group flex flex-col gap-4 w-full"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
+      onTouchStart={() => setIsPaused(true)}
+      onTouchEnd={() => setIsPaused(false)}
     >
-      <div className="relative w-full overflow-hidden rounded-[30px] md:rounded-[40px] shadow-2xl">
+      <div className="relative w-full overflow-hidden rounded-[30px] md:rounded-[40px] shadow-lg md:shadow-2xl">
         <div
           ref={containerRef}
           onScroll={handleScroll}
-          className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar touch-pan-x"
+          className="flex w-full overflow-x-auto snap-x snap-mandatory no-scrollbar touch-pan-x scroll-smooth"
           style={{ scrollBehavior: "auto" }}
         >
           {banners.map((banner) => (
             <div
               key={banner.id}
-              className={`relative min-w-full h-[520px] md:h-[420px] overflow-hidden snap-start ${banner.bg_color || "bg-[#1a237e]"}`}
+              className={`relative w-full shrink-0 h-[360px] md:h-[420px] overflow-hidden snap-center snap-always ${banner.bg_color || "bg-[#1a237e]"}`}
             >
               <div className="relative z-10 flex h-full flex-col md:flex-row">
                 {/* Content Side (Left) - Balanced spacing */}
-                <div className="flex h-[45%] md:h-full w-full flex-col justify-center px-8 md:px-12 md:w-1/2 lg:pl-24">
+                <div className="flex h-[40%] md:h-full w-full flex-col justify-center px-8 md:px-12 md:w-1/2 lg:pl-24">
                   <h2 className="text-xl md:text-3xl lg:text-4xl font-extrabold tracking-tight text-white leading-[1.2]">
                     {banner.title}
                   </h2>
-                  <p className="mt-3 text-[10px] md:text-sm font-medium text-white/60 max-w-[240px] md:max-w-md">
+                  <p className="mt-2 text-[10px] md:text-sm font-medium text-white/60 max-w-[240px] md:max-w-md line-clamp-2 md:line-clamp-none">
                     {banner.subtitle}
                   </p>
 
                   {banner.target_url && (
-                    <div className="mt-6 md:mt-8">
+                    <div className="mt-4 md:mt-8">
                       <Link
                         href={banner.target_url}
                         prefetch={false}
                         className={cn(
-                          buttonVariants({ variant: "soft", size: "lg", radius: "xl" }),
-                          "bg-white/10 backdrop-blur-xl border border-white/20 text-white hover:bg-white/20 hover:border-white/30"
+                          buttonVariants({ variant: "soft", size: "sm", radius: "xl" }),
+                          "md:py-4 md:px-8 bg-white/10 backdrop-blur-xl border border-white/20 text-white hover:bg-white/20 hover:border-white/30"
                         )}
                       >
-                        <span>Xem</span>
-                        <ChevronRight size={16} className="transition-transform group-hover/btn:translate-x-1" />
+                        <span className="font-bold">Xem</span>
+                        <ChevronRight size={14} className="md:size-4 transition-transform group-hover/btn:translate-x-1" />
                       </Link>
                     </div>
                   )}
                 </div>
 
-                {/* Image Side (Right) - Occupies full half and FILLED as requested */}
-                <div className="relative flex h-[55%] md:h-full w-full md:w-1/2 bg-black/20 overflow-hidden">
+                {/* Image Side (Right) - Occupies 60% on mobile */}
+                <div className="relative flex h-[60%] md:h-full w-full md:w-1/2 bg-black/10 overflow-hidden">
                   <div className="relative h-full w-full">
                     <ProductImage
                       src={banner.image_url}
@@ -126,6 +128,21 @@ export default function Carousel({ banners }: CarouselProps) {
             </div>
           ))}
         </div>
+
+        {/* Dots indicators for Mobile only */}
+        {banners.length > 1 && (
+          <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-1.5 md:hidden z-30">
+            {banners.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => scrollTo(i)}
+                className={`h-1.5 rounded-full transition-all duration-300 ${
+                  selectedIndex === i ? "w-6 bg-white" : "w-1.5 bg-white/40"
+                }`}
+              />
+            ))}
+          </div>
+        )}
 
         {banners.length > 1 && (
           <>
@@ -151,8 +168,9 @@ export default function Carousel({ banners }: CarouselProps) {
         )}
       </div>
 
+      {/* Tabs indicators for PC only */}
       {banners.length > 1 && (
-        <div className="flex w-full overflow-x-auto no-scrollbar gap-2 px-2 pb-2">
+        <div className="hidden md:flex w-full overflow-x-auto no-scrollbar gap-2 px-2 pb-2">
           {banners.map((banner, i) => (
             <button
               key={banner.id}

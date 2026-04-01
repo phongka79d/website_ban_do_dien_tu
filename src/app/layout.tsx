@@ -24,9 +24,9 @@ export default function RootLayout({
   return (
     <html
       lang="vi"
-      className={`${inter.variable} h-full antialiased`}
+      className={`${inter.variable} h-full antialiased overflow-x-hidden max-w-full`}
     >
-      <body className="min-h-full flex flex-col bg-slate-50">
+      <body className="min-h-full flex flex-col bg-slate-50 overflow-x-hidden max-w-full">
         <ServiceWorkerManager />
         <Header />
         <main className="flex-1 flex flex-col">

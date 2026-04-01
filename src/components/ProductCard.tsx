@@ -22,7 +22,8 @@ export default function ProductCard({ product }: ProductCardProps) {
   const router = useRouter();
   const { isInWishlist, toggleWishlist, userId } = useWishlistStore();
   const [hasMounted, setHasMounted] = useState(false);
-  const [isAnimating, setIsAnimating] = React.useState(false);
+  const [heartPos, setHeartPos] = useState({ left: 0, top: 0 });
+  const [isAnimating, setIsAnimating] = useState(false);
   const heartRef = React.useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -36,7 +37,6 @@ export default function ProductCard({ product }: ProductCardProps) {
     original_price,
     discount_percentage,
     image_url,
-    promotion_text,
     has_installment_0,
     specs,
     rating,
@@ -62,7 +62,12 @@ export default function ProductCard({ product }: ProductCardProps) {
 
     // If adding to wishlist, trigger fly animation
     if (!wasWishlisted) {
-      setIsAnimating(true);
+      if (heartRef.current) {
+      const rect = heartRef.current.getBoundingClientRect();
+      setHeartPos({ left: rect.left, top: rect.top });
+    }
+
+    setIsAnimating(true);
       setTimeout(() => setIsAnimating(false), 800);
     }
   };
@@ -72,101 +77,94 @@ export default function ProductCard({ product }: ProductCardProps) {
       <Card
         variant="elevated"
         radius="xl"
-        hover="scale"
-        className="relative flex flex-col h-full overflow-hidden border-slate-100 p-3"
+        hover="none" // Custom hover on mobile to match premium feel
+        className="relative flex flex-col h-full overflow-hidden border-slate-100 p-2 md:p-3 bg-white transition-all duration-300 hover:shadow-xl active:scale-[0.98]"
       >
         <Link href={`/products/${product.id}`} prefetch={false} className="block flex-1">
           {/* Badges Overlay */}
           <div className="absolute top-0 left-0 right-0 z-10 flex justify-between p-0 pointer-events-none">
-            {discount_percentage && discount_percentage > 0 ? (
-              <div className="bg-red-600 text-white text-[11px] font-black px-2 py-1 rounded-br-xl rounded-tl-[19px] uppercase tracking-tighter">
-                Giảm {discount_percentage}%
+            {discount_percentage && discount_percentage > 0 && (
+              <div className="relative">
+                <div className="bg-red-600 text-white text-[10px] md:text-[12px] font-black px-2 py-1 md:px-3 md:py-1.5 rounded-br-xl shadow-sm uppercase tracking-tighter relative z-10">
+                  Giảm {discount_percentage}%
+                </div>
+                {/* Ribbon Fold shadow */}
+                <div className="absolute top-[calc(100%-4px)] left-0 border-l-[4px] border-l-transparent border-t-[4px] border-t-red-800 z-0"></div>
               </div>
-            ) : <div />}
+            )}
             {has_installment_0 && (
-              <div className="bg-[#f2f7ff] text-[#4486e1] text-[10px] font-bold px-2 py-1 rounded-bl-xl rounded-tr-[19px]">
+              <div className="bg-[#e2eeff] text-[#0060ff] text-[9px] md:text-[11px] font-bold px-2 py-1 md:px-3 md:py-1.5 rounded-bl-2xl">
                 Trả góp 0%
               </div>
             )}
           </div>
 
           {/* Image Container */}
-          <div className="relative aspect-square w-full mb-3 flex items-center justify-center p-2">
+          <div className="relative aspect-square w-full mb-3 flex items-center justify-center p-2 md:p-4">
             <ProductImage
               src={image_url}
               alt={name}
               width={300}
               height={300}
-              className="max-h-[85%] max-w-[85%] object-contain transition-transform duration-500 group-hover:scale-105"
+              className="max-h-[95%] max-w-[95%] object-contain transition-transform duration-500 group-hover:scale-110"
             />
           </div>
 
+          {/* Improved Tech Specs - Tag Style */}
+          <div className="flex flex-wrap gap-1.5 mb-3">
+             {specTags.map(([key, value], idx) => (
+               <div 
+                 key={idx} 
+                 className="bg-slate-100 text-slate-600 text-[10px] md:text-[11px] font-bold px-2 py-1 rounded-md transition-all duration-300 group-hover:bg-rose-50 group-hover:text-rose-600 border border-transparent group-hover:border-rose-100"
+               >
+                 {String(value)}
+               </div>
+             ))}
+          </div>
+
           {/* Content */}
-          <div className="flex flex-col flex-1 gap-1.5 px-1">
-            <h3 className="line-clamp-2 text-[14px] font-bold text-slate-900 leading-[1.4] h-[39.2px]">
+          <div className="flex flex-col flex-1 gap-2 px-1">
+            <h3 className="line-clamp-2 text-[13px] md:text-[15px] font-bold text-slate-900 leading-snug h-[36px] md:h-[45px]">
               {name}
             </h3>
 
-            {/* Pricing */}
-            <div className="flex flex-wrap items-baseline gap-2 mt-1">
-              <span className="text-[16px] font-black text-red-600">
+            {/* Pricing Section */}
+            <div className="flex items-center gap-2">
+              <span className="text-[15px] md:text-[18px] font-black text-red-600">
                 {price.toLocaleString("vi-VN")}₫
               </span>
               {original_price && (
-                <span className="text-[12px] text-slate-400 line-through font-medium">
+                <span className="text-[11px] md:text-[13px] text-slate-400 line-through font-medium opacity-70">
                   {original_price.toLocaleString("vi-VN")}₫
                 </span>
               )}
             </div>
 
-            {/* Spec Tags */}
-            <div className="flex flex-wrap gap-1 mt-1">
-              {specTags.map(([key, value], index) => (
-                <span key={index} className="text-[10px] px-2 py-0.5 rounded-md border border-slate-200 text-slate-600 font-medium bg-slate-50/50">
-                  {String(value)}
-                </span>
-              ))}
-            </div>
-
-            {/* Promotion Bar */}
-            {promotion_text && (
-              <div className="mt-2 rounded-md bg-[#f2f7ff] px-2 py-1.5 border border-[#e5f0ff]">
-                <p className="text-[10px] text-[#4486e1] font-bold line-clamp-1">
-                  {promotion_text}
-                </p>
-              </div>
-            )}
-
-            {/* Installment Detail Box */}
+            {/* Installment Detail Box - Premium Style */}
             {has_installment_0 && (
-              <div className="mt-1 rounded-md bg-slate-50 px-2 py-2 border border-slate-100">
-                <p className="text-[10px] text-slate-600 leading-tight">
-                  Trả góp 0% - 0đ phụ thu - 0đ trả trước - kỳ hạn đến 6 tháng
-                </p>
+              <div className="bg-[#f7f2ff] text-[#8e44e1] text-[10px] md:text-[11px] font-bold px-2 py-1.5 rounded-lg border border-[#f0e5ff]">
+                Trả góp 0% lãi suất, tối đa 12 tháng
               </div>
             )}
           </div>
         </Link>
 
-        {/* Footer info: Rating & Favorite row (outside Link but inside Card) */}
-        <div className="mt-auto pt-3 flex items-center justify-between border-t border-slate-50 gap-2 px-1">
-          <div className="flex items-center gap-0.5 shrink-0">
+        {/* Improved Footer: Rating & Favorite */}
+        <div className="mt-auto pt-4 flex items-center justify-between gap-2 px-1">
+          <div className="flex items-center gap-1 shrink-0 bg-slate-50 px-2 py-1 rounded-full border border-slate-100">
             <Star className="fill-yellow-400 text-yellow-400" size={12} />
-            <span className="text-[13px] font-bold text-slate-700">{rating || "4.9"}</span>
+            <span className="text-[12px] font-black text-slate-700">{rating || "4.9"}</span>
           </div>
 
-          <div className="flex items-center gap-1 overflow-hidden">
-            <Button
-              ref={heartRef}
-              variant="ghost"
-              size="sm"
-              onClick={handleToggleWishlist}
-              leftIcon={<Heart size={14} className={isWishlisted ? "fill-red-500 text-red-500" : "text-[#4486e1]"} />}
-              className={`${isWishlisted ? "text-red-500" : "text-[#4486e1]"} font-bold text-[10px] h-8 px-2 min-w-0`}
-            >
-              <span className="hidden sm:inline">{isWishlisted ? "Đã thích" : "Yêu thích"}</span>
-            </Button>
-          </div>
+          <button
+            ref={heartRef}
+            onClick={handleToggleWishlist}
+            className={`flex items-center gap-1.5 font-bold text-[12px] transition-all active:scale-90 ${isWishlisted ? "text-red-500" : "text-blue-500 hover:text-blue-600"
+              }`}
+          >
+            <Heart size={18} className={isWishlisted ? "fill-red-500 text-red-500" : "text-blue-500"} />
+            <span className="inline-block">{isWishlisted ? "Đã thích" : "Yêu thích"}</span>
+          </button>
         </div>
       </Card>
 
@@ -174,15 +172,15 @@ export default function ProductCard({ product }: ProductCardProps) {
       <AnimatePresence>
         {isAnimating && (
           <motion.div
-            initial={{ 
+            initial={{
               position: "fixed",
-              left: heartRef.current?.getBoundingClientRect().left,
-              top: heartRef.current?.getBoundingClientRect().top,
+              left: heartPos.left,
+              top: heartPos.top,
               scale: 1,
               opacity: 1,
               zIndex: 9999
             }}
-            animate={{ 
+            animate={{
               left: document.getElementById("user-menu-target")?.getBoundingClientRect().left || "50%",
               top: document.getElementById("user-menu-target")?.getBoundingClientRect().top || 20,
               scale: 0.3,

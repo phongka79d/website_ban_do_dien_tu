@@ -33,9 +33,9 @@ export default async function Home({ searchParams }: HomeProps) {
   console.log(`Page ${page}, Items: ${products.length}, Total: ${count}`);
 
   return (
-    <main className="min-h-screen p-8 max-w-7xl mx-auto">
+    <main className="w-full max-w-7xl mx-auto min-h-screen p-4 md:p-8 pb-24 md:pb-8 overflow-hidden">
       {/* Banner Section */}
-      <section className="mb-12">
+      <section className="mb-12 overflow-hidden">
         <Carousel key={`carousel-${banners[0]?.id || "static"}`} banners={banners} />
       </section>
 
@@ -48,7 +48,9 @@ export default async function Home({ searchParams }: HomeProps) {
         </p>
       </header>
 
-      <FilterBar />
+      <div className="overflow-hidden mb-8">
+        <FilterBar />
+      </div>
 
       {/* Paginated Product List & Control */}
       <PaginatedShop 

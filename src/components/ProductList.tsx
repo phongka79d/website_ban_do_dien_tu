@@ -19,7 +19,7 @@ export default function ProductList({ products }: ProductListProps) {
   }
 
   return (
-    <section className="mt-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+    <section className="mt-2 md:mt-6 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 md:gap-6">
       {products.map((product) => (
         <ProductCard 
           key={product.id} 

@@ -3,6 +3,7 @@
 :root {
   --background: #f8fafc;
   --foreground: #111827;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 @theme inline {
@@ -12,15 +13,33 @@
   --color-secondary: #6366f1;
   --color-accent: #f1f5f9;
   --font-sans: var(--font-inter);
+  --spacing-safe-bottom: var(--safe-bottom);
+}
+
+html, body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  position: relative;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
+  -webkit-tap-highlight-color: transparent;
+  -webkit-overflow-scrolling: touch;
 }
 
 button {
   cursor: pointer;
+}
+
+@layer utilities {
+  .pb-safe {
+    padding-bottom: calc(1rem + var(--safe-bottom));
+  }
+  .mb-safe {
+    margin-bottom: var(--safe-bottom);
+  }
 }
 
 @keyframes progress {
