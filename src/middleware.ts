@@ -60,11 +60,12 @@ export async function middleware(request: NextRequest) {
 
   // Real-time Lock Check: If user is logged in, check if they are still active
   if (user) {
-    const { data: profile } = await supabase
+    const { data: profiles } = await supabase
       .from("profiles")
       .select("is_active")
-      .eq("id", user.id)
-      .single();
+      .eq("id", user.id);
+
+    const profile = profiles && profiles.length > 0 ? profiles[0] : null;
 
     if (profile && profile.is_active === false) {
       // Account is locked, sign out and redirect

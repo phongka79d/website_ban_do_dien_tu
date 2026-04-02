@@ -9,14 +9,13 @@ export class CartService {
     const { data, error } = await supabase
       .from("carts")
       .upsert({ user_id: userId }, { onConflict: "user_id" })
-      .select("id")
-      .single();
+      .select("id");
 
-    if (error) {
-      console.error("Error getting/creating cart:", error.message);
-      throw error;
+    if (error || !data || data.length === 0) {
+      console.error("Error getting/creating cart:", error?.message || "No data returned");
+      throw new Error(error?.message || "Failed to get or create cart");
     }
-    return data.id;
+    return data[0].id;
   }
 
   /**
@@ -48,24 +47,24 @@ export class CartService {
     productId: string, 
     quantity: number = 1
   ): Promise<string | null> {
-    // Kiểm tra xem đã có sản phẩm này chưa
-    const { data: existing } = await supabase
+    // Kiểm tra xem đã có sản phẩm này chưa (Thay maybeSingle) 5.0
+    const { data: existingData } = await supabase
       .from("cart_items")
       .select("id, quantity")
       .eq("cart_id", cartId)
-      .eq("product_id", productId)
-      .maybeSingle();
+      .eq("product_id", productId);
+
+    const existing = existingData && existingData.length > 0 ? existingData[0] : null;
 
     if (existing) {
       const { data, error } = await supabase
         .from("cart_items")
         .update({ quantity: existing.quantity + quantity })
         .eq("id", existing.id)
-        .select("id")
-        .single();
+        .select("id");
       
-      if (error) return null;
-      return data.id;
+      if (error || !data || data.length === 0) return null;
+      return data[0].id;
     }
 
     const { data, error } = await supabase
@@ -75,11 +74,10 @@ export class CartService {
         product_id: productId,
         quantity
       })
-      .select("id")
-      .single();
+      .select("id");
 
-    if (error) return null;
-    return data.id;
+    if (error || !data || data.length === 0) return null;
+    return data[0].id;
   }
 
   /**

@@ -15,7 +15,8 @@ import {
   Shield,
   Clock,
   Mail,
-  Phone
+  Phone,
+  Hash
 } from "lucide-react";
 import ConfirmationModal from "@/components/common/ConfirmationModal";
 import NotificationModal from "@/components/common/NotificationModal";
@@ -84,32 +85,51 @@ export default function UserManager({ currentAdminId }: UserManagerProps) {
   const confirmAction = async () => {
     if (!modalConfig.user) return;
     setIsSubmitting(true);
-    const supabase = createClient();
-    if (supabase) {
-      let result;
-      if (modalConfig.type === "block") {
-        result = await UserService.updateStatus(supabase, modalConfig.user.id, false, currentAdminId);
-      } else if (modalConfig.type === "unblock") {
-        result = await UserService.updateStatus(supabase, modalConfig.user.id, true, currentAdminId);
-      } else if (modalConfig.type === "role") {
-        const newRole = modalConfig.user.role === "admin" ? "user" : "admin";
-        result = await UserService.updateRole(supabase, modalConfig.user.id, newRole, currentAdminId);
-      }
+    
+    try {
+      const supabase = createClient();
+      if (supabase) {
+        let result;
+        if (modalConfig.type === "block") {
+          result = await UserService.updateStatus(supabase, modalConfig.user.id, false, currentAdminId);
+        } else if (modalConfig.type === "unblock") {
+          result = await UserService.updateStatus(supabase, modalConfig.user.id, true, currentAdminId);
+        } else if (modalConfig.type === "role") {
+          const newRole = modalConfig.user.role === "admin" ? "user" : "admin";
+          result = await UserService.updateRole(supabase, modalConfig.user.id, newRole, currentAdminId);
+        }
 
-      if (result?.error) {
-        setNotification({ isOpen: true, title: "Lỗi", message: result.error, type: "error" });
-      } else {
-        setNotification({
-          isOpen: true,
-          title: "Thành công",
-          message: "Cập nhật thông tin người dùng thành công.",
-          type: "success"
-        });
-        setIsModalOpen(false);
-        fetchUsers();
+        if (result?.error) {
+          setNotification({ 
+            isOpen: true, 
+            title: "Trạng thái hệ thống", 
+            message: result.error, 
+            type: "error" 
+          });
+        } else {
+          setNotification({
+            isOpen: true,
+            title: "Thành công",
+            message: "Cập nhật dữ liệu người dùng hoàn tất.",
+            type: "success"
+          });
+          setIsModalOpen(false);
+          // Ép buộc tải lại dữ liệu từ Server để vượt qua cache Next.js 3.0
+          fetchUsers();
+          window.location.reload(); // Cách triệt để nhất để thấy trạng thái Mở khóa
+        }
       }
+    } catch (err: any) {
+      console.error("Critical Admin User Error:", err);
+      setNotification({
+        isOpen: true,
+        title: "Lỗi kết nối",
+        message: "Không thể kết nối với dịch vụ dữ liệu Cloud. Vui lòng kiểm tra mạng hoặc thử lại sau.",
+        type: "error"
+      });
+    } finally {
+      setIsSubmitting(false);
     }
-    setIsSubmitting(false);
   };
 
   return (
@@ -151,125 +171,121 @@ export default function UserManager({ currentAdminId }: UserManagerProps) {
           </Button>
         </div>
 
-        {/* User Table */}
-        <div className="overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50/50">
-                <th className="p-5 text-[10px] font-black uppercase tracking-widest text-slate-400">Người dùng</th>
-                <th className="p-5 text-[10px] font-black uppercase tracking-widest text-slate-400">Liên hệ</th>
-                <th className="p-5 text-[10px] font-black uppercase tracking-widest text-slate-400">Vai trò</th>
-                <th className="p-5 text-[10px] font-black uppercase tracking-widest text-slate-400">Trạng thái</th>
-                <th className="p-5 text-[10px] font-black uppercase tracking-widest text-slate-400">Ngày tạo</th>
-                <th className="p-5 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Thao tác</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50">
-              {users.map((user) => (
-                <tr key={user.id} className="hover:bg-slate-50/30 transition-colors group">
-                  <td className="p-5">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 overflow-hidden shrink-0 border border-slate-200/50">
-                        {user.avatar_url ? (
-                          <img src={user.avatar_url} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          <User size={20} />
-                        )}
-                      </div>
-                      <div>
-                        <p className="font-black text-slate-900 text-[15px] flex items-center gap-2">
-                          {user.full_name || "Chưa cập nhật"}
-                          {user.id === currentAdminId && (
-                            <span className="px-2 py-0.5 rounded-md bg-secondary/10 text-secondary text-[8px] font-black uppercase tracking-tighter">Bạn</span>
-                          )}
-                        </p>
-                        <p className="text-[11px] text-slate-400 font-medium">ID: ...{user.id.slice(-8)}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="p-5">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2 text-[13px] text-slate-600 font-medium">
-                        <Mail size={12} className="text-slate-300" />
-                        {user.email || "---"}
-                      </div>
-                      {user.phone && (
-                        <div className="flex items-center gap-2 text-[12px] text-slate-500">
-                          <Phone size={12} className="text-slate-300" />
-                          {user.phone}
-                        </div>
-                      )}
-                    </div>
-                  </td>
-                  <td className="p-5">
-                    <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-[11px] font-black uppercase tracking-tighter ${
-                      user.role === "admin" 
-                        ? "bg-primary/10 text-primary" 
-                        : "bg-slate-100 text-slate-500"
-                    }`}>
-                      {user.role === "admin" ? <ShieldCheck size={12} /> : <User size={12} />}
-                      {user.role === "admin" ? "Quản trị" : "Khách"}
-                    </div>
-                  </td>
-                  <td className="p-5">
-                    <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-[11px] font-black uppercase tracking-tighter ${
-                      user.is_active 
-                        ? "bg-emerald-50 text-emerald-600" 
-                        : "bg-rose-50 text-rose-600"
-                    }`}>
-                      <div className={`w-1.5 h-1.5 rounded-full ${user.is_active ? "bg-emerald-600 animate-pulse" : "bg-rose-600"}`} />
-                      {user.is_active ? "Hoạt động" : "Bị khóa"}
-                    </div>
-                  </td>
-                  <td className="p-5">
-                    <div className="flex items-center gap-2 text-slate-500 text-[13px] font-medium">
-                      <Clock size={12} className="text-slate-300" />
-                      {user.created_at ? formatDate(user.created_at) : "---"}
-                    </div>
-                  </td>
-                  <td className="p-5 text-right">
-                    <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {/* Change Role Button */}
-                      <Button
-                        variant="light"
-                        size="sm"
-                        className="rounded-xl h-9 w-9 p-0"
-                        title="Đổi vai trò"
-                        onClick={() => handleActionClick("role", user)}
-                      >
-                        <Shield size={16} />
-                      </Button>
+        {/* User Rows List 3.0 */}
+        <div className="flex flex-col gap-3">
+          {users.map((user) => (
+            <div
+              key={user.id}
+              className="flex items-center justify-between bg-white p-5 rounded-[2rem] border border-slate-100 hover:shadow-xl hover:shadow-slate-200/50 transition-all group relative overflow-hidden"
+            >
+              {/* Profile Section */}
+              <div className="flex items-center gap-4 w-full md:w-[30%] shrink-0 min-w-0">
+                <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 overflow-hidden shrink-0 border-2 border-white shadow-sm ring-1 ring-slate-100">
+                  {user.avatar_url ? (
+                    <img src={user.avatar_url} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <User size={24} />
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <p className="font-black text-slate-900 text-[16px] truncate">
+                      {user.full_name || "Chưa cập nhật"}
+                    </p>
+                    {user.id === currentAdminId && (
+                      <span className="px-2 py-0.5 rounded-lg bg-indigo-50 text-indigo-600 text-[9px] font-black uppercase tracking-tighter ring-1 ring-indigo-100 shrink-0">Bạn</span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-slate-400 font-mono flex items-center gap-1 truncate">
+                    <Hash size={10} /> {user.id.slice(0, 8)}...{user.id.slice(-4)}
+                  </p>
+                </div>
+              </div>
 
-                      {/* Block/Unblock Button */}
-                      {user.is_active ? (
-                        <Button
-                          variant="lightDanger"
-                          size="sm"
-                          className={`rounded-xl h-9 w-9 p-0 ${
-                            (user.role === "admin" || user.id === currentAdminId) ? "opacity-30 cursor-not-allowed" : ""
-                          }`}
-                          title="Khóa tài khoản"
-                          onClick={() => handleActionClick("block", user)}
-                        >
-                          <UserMinus size={16} />
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="rounded-xl h-9 w-9 p-0 bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
-                          title="Mở khóa"
-                          onClick={() => handleActionClick("unblock", user)}
-                        >
-                          <UserCheck size={16} />
-                        </Button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+              {/* Contact Section 3.0: Thêm truncate và min-w-0 để tránh đè badge */}
+              <div className="hidden md:flex flex-col gap-1 w-[25%] shrink-0 min-w-0 px-2 text-center items-center">
+                <div className="flex items-center gap-2 text-[13px] text-slate-600 font-bold bg-slate-50/80 px-3 py-1.5 rounded-xl border border-slate-100 w-full justify-center">
+                  <Mail size={12} className="text-slate-400 shrink-0" />
+                  <span className="truncate">{user.email || "---"}</span>
+                </div>
+                {user.phone && (
+                  <div className="flex items-center gap-2 text-[12px] text-slate-500 font-medium px-3 truncate">
+                    <Phone size={12} className="text-slate-300 shrink-0" />
+                    {user.phone}
+                  </div>
+                )}
+              </div>
+
+              {/* Status & Role Section */}
+              <div className="hidden lg:flex items-center justify-center gap-3 w-[25%] shrink-0">
+                <div className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-colors shrink-0 ${
+                  user.role === "admin" 
+                    ? "bg-indigo-100/50 text-indigo-700 border-indigo-200" 
+                    : "bg-slate-100 text-slate-500 border-slate-200"
+                }`}>
+                  {user.role === "admin" ? <ShieldCheck size={14} /> : <User size={14} />}
+                  {user.role === "admin" ? "Quản trị" : "Khách"}
+                </div>
+
+                <div className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-colors shrink-0 ${
+                  user.is_active 
+                    ? "bg-emerald-100/50 text-emerald-700 border-emerald-200" 
+                    : "bg-rose-100/50 text-rose-700 border-rose-200"
+                }`}>
+                  <div className={`w-1.5 h-1.5 rounded-full ${user.is_active ? "bg-emerald-500 animate-pulse" : "bg-rose-500"}`} />
+                  {user.is_active ? "Hoạt động" : "Bị khóa"}
+                </div>
+              </div>
+
+              {/* Meta Section (Desktop only) */}
+              <div className="hidden md:block w-[15%] text-right pr-6">
+                <div className="flex flex-col items-end">
+                  <p className="text-[10px] font-black text-slate-300 uppercase mb-1 tracking-tighter">Ngày tham gia</p>
+                  <p className="text-[13px] font-bold text-slate-500">
+                    {user.created_at ? formatDate(user.created_at) : "---"}
+                  </p>
+                </div>
+              </div>
+
+              {/* Actions Section Tooltip Style 3.0 */}
+              <div className="flex items-center justify-end gap-2 shrink-0">
+                <Button
+                  variant="light"
+                  size="sm"
+                  className="rounded-2xl h-11 w-11 p-0 hover:bg-slate-100 border border-slate-100 shadow-sm"
+                  title="Đổi vai trò"
+                  onClick={() => handleActionClick("role", user)}
+                >
+                  <Shield size={20} className="text-slate-500" />
+                </Button>
+
+                {user.is_active ? (
+                  <Button
+                    variant="lightDanger"
+                    size="sm"
+                    className={`rounded-2xl h-11 w-11 p-0 border border-rose-50 shadow-sm ${
+                      (user.role === "admin" || user.id === currentAdminId) ? "opacity-30 cursor-not-allowed grayscale" : "hover:bg-rose-100"
+                    }`}
+                    title="Khóa tài khoản"
+                    disabled={user.role === "admin" || user.id === currentAdminId}
+                    onClick={() => handleActionClick("block", user)}
+                  >
+                    <UserMinus size={20} className="text-rose-500" />
+                  </Button>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="rounded-2xl h-11 w-11 p-0 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-100 shadow-sm transition-all"
+                    title="Mở khóa"
+                    onClick={() => handleActionClick("unblock", user)}
+                  >
+                    <UserCheck size={20} />
+                  </Button>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
 
         <Pagination

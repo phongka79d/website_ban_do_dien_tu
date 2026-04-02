@@ -110,7 +110,8 @@ export default function Header() {
       setUser(user);
       setLoading(false);
 
-      if (user) {
+      // Chỉ fetch dữ liệu nếu có user VÀ không ở trang admin 4.0
+      if (user && !pathname?.startsWith("/admin")) {
         fetchCart(user.id);
         fetchWishlist(user.id);
       }
@@ -124,14 +125,15 @@ export default function Header() {
       setUser(newUser);
       setLoading(false);
 
-      if (newUser) {
+      // Cập nhật dữ liệu khi trạng thái auth thay đổi (trừ admin) 4.0
+      if (newUser && !pathname?.startsWith("/admin")) {
         fetchCart(newUser.id);
         fetchWishlist(newUser.id);
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [supabase, fetchCart, fetchWishlist]);
+  }, [supabase, fetchCart, fetchWishlist, pathname]);
 
   React.useEffect(() => {
     setHasMounted(true);
@@ -175,13 +177,13 @@ export default function Header() {
             >
               <Menu size={24} />
             </button>
-            
+
             <div className="text-xl font-black tracking-tighter text-primary md:text-2xl">
               <Link href="/">
                 TS<span className="text-secondary italic">Shop</span>
               </Link>
             </div>
-            
+
             <button
               onClick={() => setIsCategoryOpen(!isCategoryOpen)}
               className="hidden items-center gap-2 rounded-xl bg-slate-100 px-3 py-2 text-sm font-bold text-slate-700 transition-all hover:bg-primary hover:text-white md:flex active:scale-95"
@@ -216,7 +218,7 @@ export default function Header() {
           </div>
 
           <div className="flex flex-1 items-center justify-end gap-1 md:flex-none">
-            <button 
+            <button
               onClick={() => setIsSearchOpen(true)}
               className="flex items-center justify-center rounded-xl p-2 text-slate-600 transition-colors hover:bg-slate-100 md:hidden"
             >
@@ -280,8 +282,8 @@ export default function Header() {
                 </div>
               </div>
             ) : (
-              <Link 
-                href={`/login?returnTo=${encodeURIComponent(pathname)}`} 
+              <Link
+                href={`/login?returnTo=${encodeURIComponent(pathname)}`}
                 className="hidden md:block"
               >
                 <HeaderAction icon={<User size={20} />} label="Thành viên" subLabel="TSShop" />
@@ -332,7 +334,7 @@ export default function Header() {
 
         <AnimatePresence>
           {isSearchOpen && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}

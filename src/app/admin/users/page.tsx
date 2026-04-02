@@ -17,6 +17,16 @@ export default async function AdminUsersPage() {
 
   if (!user) redirect("/login");
 
+  // Kiểm tra vai trò admin 3.0
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id);
+
+  if (!profiles || profiles.length === 0 || profiles[0].role !== "admin") {
+    redirect("/");
+  }
+
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
       <div>

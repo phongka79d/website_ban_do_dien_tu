@@ -57,23 +57,32 @@ export class UserService {
       return { error: "Bạn không thể tự khóa chính mình." };
     }
 
-    // 2. Chống khóa Admin khác (Cần kiểm tra role của target)
-    const { data: targetProfile } = await supabase
+    // 2. Chống khóa Admin khác (Kiểm tra mảng thay vì .single)
+    const { data: profiles } = await supabase
       .from("profiles")
       .select("role")
-      .eq("id", targetUserId)
-      .single();
+      .eq("id", targetUserId);
+
+    const targetProfile = profiles && profiles.length > 0 ? profiles[0] : null;
+
+    if (!targetProfile) {
+      return { error: "Không tìm thấy thông tin người dùng mục tiêu." };
+    }
 
     if (targetProfile?.role === "admin" && isActive === false) {
       return { error: "Không thể khóa tài khoản của quản trị viên khác." };
     }
 
-    const { error } = await supabase
+    const { data: updatedRows, error } = await supabase
       .from("profiles")
       .update({ is_active: isActive, updated_at: new Date().toISOString() })
-      .eq("id", targetUserId);
+      .eq("id", targetUserId)
+      .select();
 
     if (error) return { error: error.message };
+    if (!updatedRows || updatedRows.length === 0) {
+      return { error: "Cập nhật trạng thái thất bại. Có thể bạn không có quyền (Lỗi RLS)." };
+    }
     return { success: true };
   }
 
@@ -91,12 +100,16 @@ export class UserService {
       return { error: "Bạn không thể tự hạ quyền của chính mình." };
     }
 
-    const { error } = await supabase
+    const { data: updatedRows, error } = await supabase
       .from("profiles")
       .update({ role: newRole, updated_at: new Date().toISOString() })
-      .eq("id", targetUserId);
+      .eq("id", targetUserId)
+      .select();
 
     if (error) return { error: error.message };
+    if (!updatedRows || updatedRows.length === 0) {
+      return { error: "Chuyển đổi vai trò thất bại. Kiểm tra lại quyền hạn của bạn (Lỗi RLS)." };
+    }
     return { success: true };
   }
 }

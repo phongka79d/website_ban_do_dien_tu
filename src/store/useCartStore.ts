@@ -54,28 +54,36 @@ export const useCartStore = create<CartState>((set, get) => ({
     const supabase = createClient();
     if (!supabase) return null;
 
-    const itemId = await CartService.addToCart(supabase, cartId, product.id, quantity);
-    
-    if (itemId) {
-      const updatedItems = await CartService.fetchCartItems(supabase, cartId);
-      set({ items: updatedItems, isOpen: true });
-      return itemId;
+    try {
+      const itemId = await CartService.addToCart(supabase, cartId, product.id, quantity);
+      
+      if (itemId) {
+        const updatedItems = await CartService.fetchCartItems(supabase, cartId);
+        set({ items: updatedItems, isOpen: true });
+        return itemId;
+      }
+    } catch (error: any) {
+      console.error("CartStore: Failed to add item:", error.message || error);
     }
     return null;
   },
 
   updateQuantity: async (itemId, quantity) => {
-    if (quantity < 1) return; // Safeguard: Min quantity is 1. 2.0
+    if (quantity < 1) return;
 
     const supabase = createClient();
     if (!supabase) return;
 
-    const success = await CartService.updateQuantity(supabase, itemId, quantity);
-    if (success) {
-      const items = get().items.map((item) =>
-        item.id === itemId ? { ...item, quantity } : item
-      );
-      set({ items });
+    try {
+      const success = await CartService.updateQuantity(supabase, itemId, quantity);
+      if (success) {
+        const items = get().items.map((item) =>
+          item.id === itemId ? { ...item, quantity } : item
+        );
+        set({ items });
+      }
+    } catch (error: any) {
+      console.error("CartStore: Failed to update quantity:", error.message || error);
     }
   },
 
@@ -83,9 +91,13 @@ export const useCartStore = create<CartState>((set, get) => ({
     const supabase = createClient();
     if (!supabase) return;
 
-    const success = await CartService.removeFromCart(supabase, itemId);
-    if (success) {
-      set({ items: get().items.filter((item) => item.id !== itemId) });
+    try {
+      const success = await CartService.removeFromCart(supabase, itemId);
+      if (success) {
+        set({ items: get().items.filter((item) => item.id !== itemId) });
+      }
+    } catch (error: any) {
+      console.error("CartStore: Failed to remove item:", error.message || error);
     }
   },
 

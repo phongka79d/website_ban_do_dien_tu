@@ -55,10 +55,8 @@ export default function TrackOrderPage() {
     switch (status) {
       case 'pending': return { label: "Chờ xác nhận", icon: <Clock className="text-amber-500" />, color: "bg-amber-500" };
       case 'processing': return { label: "Đang xử lý", icon: <Package className="text-blue-500" />, color: "bg-blue-500" };
-      case 'shipping': return { label: "Đang giao hàng", icon: <Truck className="text-indigo-500" />, color: "bg-indigo-500" };
       case 'shipped': return { label: "Đang giao hàng", icon: <Truck className="text-indigo-500" />, color: "bg-indigo-500" };
       case 'delivered': return { label: "Đã giao hàng", icon: <CheckCircle2 className="text-green-500" />, color: "bg-green-500" };
-      case 'completed': return { label: "Đã giao hàng", icon: <CheckCircle2 className="text-green-500" />, color: "bg-green-500" };
       case 'cancelled': return { label: "Đã hủy", icon: <XCircle className="text-red-500" />, color: "bg-red-500" };
       default: return { label: status, icon: <AlertCircle />, color: "bg-gray-500" };
     }
@@ -134,14 +132,12 @@ export default function TrackOrderPage() {
                 </div>
 
                 <div className="flex justify-between items-center mb-10 px-4">
-                  {['pending', 'processing', 'shipping', 'completed'].map((s, idx) => {
+                  {['pending', 'processing', 'shipped', 'delivered'].map((s, idx) => {
                     const statusMapping: Record<string, string[]> = {
                       'pending': ['pending'],
                       'processing': ['pending', 'processing'],
-                      'shipping': ['pending', 'processing', 'shipping'],
-                      'shipped': ['pending', 'processing', 'shipping'],
-                      'delivered': ['pending', 'processing', 'shipping', 'completed'],
-                      'completed': ['pending', 'processing', 'shipping', 'completed']
+                      'shipped': ['pending', 'processing', 'shipped'],
+                      'delivered': ['pending', 'processing', 'shipped', 'delivered']
                     };
                     const activeStages = statusMapping[order.status] || [];
                     const isActive = activeStages.includes(s);

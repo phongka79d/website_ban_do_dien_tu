@@ -4,12 +4,12 @@ import React, { useState, useCallback } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { OrderService } from "@/services/orderService";
 import { OrderWithItems } from "@/types/database";
-import { 
-  Search, 
-  Package, 
-  Eye, 
-  User, 
-  MapPin, 
+import {
+  Search,
+  Package,
+  Eye,
+  User,
+  MapPin,
   ChevronRight,
   Clock,
   CheckCircle2,
@@ -28,7 +28,7 @@ import { AdminSelect } from "@/components/admin/AdminSelect";
 
 export default function AdminOrdersPage() {
   const supabase = createClient();
-  
+
   // Search and Pagination logic
   const searchFn = useCallback((client: any, query: string, page: number, pageSize: number) => {
     if (!client) return Promise.resolve({ data: [], count: 0 });
@@ -67,9 +67,9 @@ export default function AdminOrdersPage() {
   const getStatusInfo = (status: string) => {
     switch (status) {
       case 'pending': return { label: 'CHỜ XÁC NHẬN', color: 'bg-amber-50 text-amber-600 border-amber-100', icon: <Clock size={14} /> };
-      case 'confirmed': return { label: 'ĐÃ XÁC NHẬN', color: 'bg-indigo-50 text-indigo-600 border-indigo-100', icon: <CheckCircle2 size={14} /> };
-      case 'shipping': return { label: 'ĐANG GIAO HÀNG', color: 'bg-sky-50 text-sky-600 border-sky-100', icon: <Truck size={14} /> };
-      case 'completed': return { label: 'ĐÃ HOÀN THÀNH', color: 'bg-emerald-50 text-emerald-600 border-emerald-100', icon: <CheckCircle2 size={14} /> };
+      case 'processing': return { label: 'ĐÃ XÁC NHẬN', color: 'bg-indigo-50 text-indigo-600 border-indigo-100', icon: <CheckCircle2 size={14} /> };
+      case 'shipped': return { label: 'ĐANG GIAO HÀNG', color: 'bg-sky-50 text-sky-600 border-sky-100', icon: <Truck size={14} /> };
+      case 'delivered': return { label: 'ĐÃ HOÀN THÀNH', color: 'bg-emerald-50 text-emerald-600 border-emerald-100', icon: <CheckCircle2 size={14} /> };
       case 'cancelled': return { label: 'ĐÃ HỦY', color: 'bg-rose-50 text-rose-600 border-rose-100', icon: <XCircle size={14} /> };
       default: return { label: 'KHÔNG XÁC ĐỊNH', color: 'bg-slate-50 text-slate-600 border-slate-100', icon: <Hash size={14} /> };
     }
@@ -77,10 +77,10 @@ export default function AdminOrdersPage() {
 
   const handleUpdateStatus = async () => {
     if (!statusUpdateMode || !supabase) return;
-    
+
     setIsUpdating(true);
     const { success, error } = await OrderService.updateOrderStatus(supabase, statusUpdateMode.id, statusUpdateMode.status);
-    
+
     if (success) {
       setNotification({
         isOpen: true,
@@ -97,7 +97,7 @@ export default function AdminOrdersPage() {
         type: "error"
       });
     }
-    
+
     setIsUpdating(false);
     setStatusUpdateMode(null);
   };
@@ -135,83 +135,77 @@ export default function AdminOrdersPage() {
         </div>
       </header>
 
-      {/* Orders List */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      {/* Orders List - Vertical & Simplified Style 2.0 */}
+      <div className="flex flex-col gap-3">
         {orders.map((order) => {
           const status = getStatusInfo(order.status);
           return (
-            <div 
-              key={order.id} 
-              className="group bg-white rounded-[32px] border border-slate-100 p-8 shadow-sm hover:shadow-2xl hover:border-primary/20 transition-all duration-500 relative overflow-hidden"
+            <div
+              key={order.id}
+              className="group bg-white rounded-3xl border border-slate-100 p-4 pl-6 pr-6 hover:shadow-xl hover:border-primary/20 transition-all duration-300 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden"
             >
-              {/* Card Decoration */}
-              <div className="absolute top-0 right-0 w-32 h-32 bg-slate-50 rounded-bl-[60px] -z-0 group-hover:bg-primary/[0.03] transition-colors"></div>
+              {/* Left Part: ID & Time */}
+              <div className="flex items-center gap-6 min-w-[200px]">
+                <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                  <Hash size={18} />
+                </div>
+                <div>
+                  <span className="text-[14px] font-black text-slate-900 block tracking-tight">#{order.id.slice(0, 8).toUpperCase()}</span>
+                  <span className="text-[11px] font-bold text-slate-400 flex items-center gap-1.5">
+                    <Clock size={10} />
+                    {formatDate(order.created_at)}
+                  </span>
+                </div>
+              </div>
 
-              <div className="relative z-10">
-                <div className="flex justify-between items-start mb-8">
-                  <div className="flex flex-col gap-1">
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">ORDER IDENTIFIER</span>
-                    <span className="text-[20px] font-black text-slate-900 mono tracking-tighter">#{order.id.slice(0, 12)}</span>
+              {/* Middle Part: Customer Info - Refined 2.0 */}
+              <div className="flex-1 flex items-center gap-8 px-6 border-l border-slate-50 hidden md:flex min-w-0">
+                <div className="flex items-center gap-3 shrink-0">
+                  <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-500">
+                    <User size={14} />
                   </div>
-                  <div className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[11px] font-black border-2 ${status.color}`}>
-                    {status.icon}
-                    <span className="tracking-wide uppercase">{status.label}</span>
+                  <div className="max-w-[150px]">
+                    <p className="text-[13px] font-black text-slate-800 truncate">{order.full_name}</p>
+                    <p className="text-[11px] font-bold text-slate-400">{order.phone_number}</p>
                   </div>
                 </div>
+              </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                  {/* Customer Info */}
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:text-primary transition-colors">
-                        <User size={18} />
-                      </div>
-                      <div>
-                        <p className="text-[14px] font-black text-slate-900">{order.full_name}</p>
-                        <p className="text-[12px] font-bold text-slate-400">{order.phone_number}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-4">
-                      <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 mt-0.5 group-hover:text-primary transition-colors">
-                        <MapPin size={18} />
-                      </div>
-                      <div>
-                        <p className="text-[13px] font-medium text-slate-500 leading-relaxed line-clamp-2 italic">
-                          {order.shipping_address}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Summary */}
-                  <div className="bg-slate-50 rounded-[24px] p-5 flex flex-col justify-center border border-slate-100/50 group-hover:bg-white transition-colors">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 text-center">TỔNG GIÁ TRỊ</span>
-                    <p className="text-[28px] font-black text-primary text-center italic tracking-tight italic">
-                      {formatCurrency(order.total_amount)}
-                    </p>
-                    <div className="flex items-center justify-center gap-2 mt-2 text-[11px] font-bold text-slate-400">
-                      <Clock size={12} />
-                      {formatDate(order.created_at)}
-                    </div>
-                  </div>
+              {/* Right Part: Value & Status & Actions */}
+              <div className="flex items-center gap-8">
+                {/* Amount */}
+                <div className="text-right min-w-[140px]">
+                  <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest block">TỔNG GIÁ TRỊ</span>
+                  <span className="text-[18px] font-black text-slate-900 italic tracking-tighter">
+                    {formatCurrency(order.total_amount)}
+                  </span>
                 </div>
 
-                {/* Actions */}
-                <div className="flex gap-3 pt-6 border-t border-slate-100">
-                  <Button
-                    variant="ghost"
-                    className="flex-1 bg-slate-50 text-slate-600 hover:bg-slate-900 hover:text-white rounded-2xl h-12 font-black uppercase text-[12px] tracking-wider"
+                {/* Status Badge */}
+                <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-black border ${status.color} min-w-[130px] justify-center`}>
+                  {status.icon}
+                  <span className="tracking-wide uppercase">{status.label}</span>
+                </div>
+
+                {/* Vertical Separator */}
+                <div className="h-10 w-[1px] bg-slate-100 hidden md:block" />
+
+                {/* Quick Actions */}
+                <div className="flex gap-2">
+                  <button
                     onClick={() => setSelectedOrder(order)}
-                    leftIcon={<Eye size={16} />}
+                    className="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 hover:bg-slate-900 hover:text-white flex items-center justify-center transition-all shadow-sm"
+                    title="Chi tiết"
                   >
-                    CHI TIẾT
-                  </Button>
-                  <Button
-                    className="flex-1 bg-primary text-white shadow-lg shadow-primary/20 rounded-2xl h-12 font-black uppercase text-[12px] tracking-wider"
+                    <Eye size={18} />
+                  </button>
+                  <button
                     onClick={() => setStatusUpdateMode({ id: order.id, status: order.status })}
+                    className="px-4 h-10 rounded-xl bg-primary text-white text-[11px] font-black uppercase tracking-wider flex items-center gap-2 shadow-lg shadow-primary/20 hover:scale-105 transition-all"
                   >
+                    <RotateCcw size={14} />
                     CẬP NHẬT
-                  </Button>
+                  </button>
                 </div>
               </div>
             </div>
@@ -240,7 +234,7 @@ export default function AdminOrdersPage() {
           </div>
           <h3 className="text-[20px] font-black text-slate-900 uppercase">Không tìm thấy Đơn hàng</h3>
           <p className="text-slate-400 font-bold mt-2">Dữ liệu truy xuất không khớp với từ khóa tìm kiếm của bạn.</p>
-          <button 
+          <button
             onClick={() => setSearchTerm("")}
             className="mt-6 text-primary font-black uppercase text-[13px] tracking-widest hover:underline"
           >
@@ -264,7 +258,28 @@ export default function AdminOrdersPage() {
               </button>
             </div>
 
-            <div className="p-10 max-h-[60vh] overflow-y-auto space-y-8">
+            <div className="p-10 max-h-[60vh] overflow-y-auto space-y-8 custom-scrollbar">
+              {/* Customer & Shipping Info 2.0 */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-slate-50 p-6 rounded-[32px] border border-slate-100">
+                <div className="space-y-4">
+                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                    <User size={12} className="text-primary" /> THÔNG TIN KHÁCH HÀNG
+                  </h3>
+                  <div>
+                    <p className="text-[16px] font-black text-slate-900">{selectedOrder.full_name}</p>
+                    <p className="text-[14px] font-bold text-slate-500">{selectedOrder.phone_number}</p>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                    <MapPin size={12} className="text-primary" /> ĐỊA CHỈ GIAO HÀNG
+                  </h3>
+                  <p className="text-[13px] font-medium text-slate-600 leading-relaxed italic">
+                    {selectedOrder.shipping_address}
+                  </p>
+                </div>
+              </div>
+
               {/* Product List */}
               <div>
                 <h3 className="text-[12px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">SẢN PHẨM ĐÃ ĐẶT</h3>
@@ -330,9 +345,9 @@ export default function AdminOrdersPage() {
             onChange={(e) => setStatusUpdateMode(prev => prev ? { ...prev, status: e.target.value } : null)}
             options={[
               { value: "pending", label: "Chờ xác nhận" },
-              { value: "confirmed", label: "Đã xác nhận" },
-              { value: "shipping", label: "Đang giao hàng" },
-              { value: "completed", label: "Đã hoàn thành" },
+              { value: "processing", label: "Đã xác nhận (Đang xử lý)" },
+              { value: "shipped", label: "Đang giao hàng" },
+              { value: "delivered", label: "Đã hoàn thành (Đã giao)" },
               { value: "cancelled", label: "Đã hủy" },
             ]}
           />
