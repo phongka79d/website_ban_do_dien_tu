@@ -18,7 +18,8 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/login?error=auth_required");
+    const returnUrl = encodeURIComponent(`/checkout?item_ids=${item_ids || ""}`);
+    redirect(`/login?error=auth_required&returnTo=${returnUrl}`);
   }
 
   // Lấy giỏ hàng thực tế từ Database

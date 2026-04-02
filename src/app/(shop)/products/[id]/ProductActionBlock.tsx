@@ -37,10 +37,10 @@ export function ProductActionBlock({ product }: ProductActionBlockProps) {
     setIsModalOpen(true);
   };
 
-  const handleSuccess = () => {
+  const handleSuccess = (itemId: string) => {
     setIsModalOpen(false);
     if (modalType === "buy") {
-      router.push("/checkout");
+      router.push(`/checkout?item_ids=${itemId}`);
     }
   };
 

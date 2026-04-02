@@ -16,7 +16,7 @@ interface AddToCartButtonProps {
   showIcon?: boolean;
   label?: string;
   quantity?: number;
-  onSuccess?: () => void;
+  onSuccess?: (itemId: string) => void;
   leftIcon?: React.ReactNode;
 }
 
@@ -52,19 +52,20 @@ export function AddToCartButton({
     
     if (!user) {
       setIsAdding(false);
-      router.push("/login?error=auth_required");
+      const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+      router.push(`/login?error=auth_required&returnTo=${returnUrl}`);
       return;
     }
 
     try {
-      await addItem(product, quantity);
+      const itemId = await addItem(product, quantity);
       
       // Kích hoạt hiệu ứng bay
       setIsFlying(true);
       
       // Gọi callback thành công (nếu có) để nhảy sang trang checkout
-      if (onSuccess) {
-        onSuccess();
+      if (onSuccess && itemId) {
+        onSuccess(itemId);
       }
       
       // Tự động tắt element bay sau khi hoàn tất animation

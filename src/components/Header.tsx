@@ -280,7 +280,10 @@ export default function Header() {
                 </div>
               </div>
             ) : (
-              <Link href="/login" className="hidden md:block">
+              <Link 
+                href={`/login?returnTo=${encodeURIComponent(pathname)}`} 
+                className="hidden md:block"
+              >
                 <HeaderAction icon={<User size={20} />} label="Thành viên" subLabel="TSShop" />
               </Link>
             )}
@@ -290,7 +293,8 @@ export default function Header() {
                 id="cart-icon-target"
                 onClick={() => {
                   if (!user) {
-                    router.push("/login?error=auth_required");
+                    const returnUrl = encodeURIComponent(pathname);
+                    router.push(`/login?error=auth_required&returnTo=${returnUrl}`);
                   } else {
                     router.push("/cart");
                   }

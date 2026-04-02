@@ -47,7 +47,13 @@ export default function LoginPage() {
       setGlobalError(result.error);
       setLoading(false);
     } else {
-      window.location.href = "/";
+      // Lấy đường dẫn quay về từ URL
+      const returnTo = searchParams.get("returnTo");
+      
+      // Bảo mật: Chỉ cho phép chuyển hướng nếu bắt đầu bằng '/' và không phải URL tuyệt đối (tránh Open Redirect)
+      const isValidRedirect = returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//");
+      
+      window.location.href = isValidRedirect ? returnTo : "/";
     }
   }
 
@@ -114,7 +120,10 @@ export default function LoginPage() {
 
       <p className="mt-8 text-center text-sm font-medium text-slate-500">
         Chưa có tài khoản?{" "}
-        <Link href="/register" className="font-bold text-primary hover:underline">
+        <Link 
+          href={searchParams.get("returnTo") ? `/register?returnTo=${encodeURIComponent(searchParams.get("returnTo")!)}` : "/register"} 
+          className="font-bold text-primary hover:underline"
+        >
           Đăng ký ngay
         </Link>
       </p>

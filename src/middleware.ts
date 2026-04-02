@@ -78,14 +78,18 @@ export async function middleware(request: NextRequest) {
   // RBAC: Protect admin routes
   if (request.nextUrl.pathname.startsWith("/admin")) {
     if (!user || !isAdmin(user)) {
-      return NextResponse.redirect(new URL("/login", request.url));
+      const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("returnTo", request.nextUrl.pathname + request.nextUrl.search);
+      return NextResponse.redirect(loginUrl);
     }
   }
 
   // Protect User Profiles
   if (request.nextUrl.pathname.startsWith("/profile")) {
     if (!user) {
-      return NextResponse.redirect(new URL("/login", request.url));
+      const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("returnTo", request.nextUrl.pathname + request.nextUrl.search);
+      return NextResponse.redirect(loginUrl);
     }
   }
 

@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { signUp, verifyOtpCode, resendOtpCode } from "@/app/auth/actions";
 import { Mail, Lock, Eye, EyeOff, ArrowRight, ShieldCheck } from "lucide-react";
 import AuthCard from "@/components/auth/AuthCard";
@@ -27,6 +28,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { registerSchema, RegisterFormData } from "@/lib/validations/auth";
 
 export default function RegisterPage() {
+  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
@@ -72,7 +74,9 @@ export default function RegisterPage() {
       setGlobalError(result.error);
       setLoading(false);
     } else {
-      window.location.href = "/";
+      const returnTo = searchParams.get("returnTo");
+      const isValidRedirect = returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//");
+      window.location.href = isValidRedirect ? returnTo : "/";
     }
   }
 
@@ -200,7 +204,10 @@ export default function RegisterPage() {
 
       <p className="mt-8 text-center text-sm font-medium text-slate-500">
         Đã có tài khoản?{" "}
-        <Link href="/login" className="font-bold text-secondary hover:underline">
+        <Link 
+          href={searchParams.get("returnTo") ? `/login?returnTo=${encodeURIComponent(searchParams.get("returnTo")!)}` : "/login"} 
+          className="font-bold text-secondary hover:underline"
+        >
           Đăng nhập ngay
         </Link>
       </p>

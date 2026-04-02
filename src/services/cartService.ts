@@ -47,7 +47,7 @@ export class CartService {
     cartId: string, 
     productId: string, 
     quantity: number = 1
-  ): Promise<boolean> {
+  ): Promise<string | null> {
     // Kiểm tra xem đã có sản phẩm này chưa
     const { data: existing } = await supabase
       .from("cart_items")
@@ -57,21 +57,29 @@ export class CartService {
       .maybeSingle();
 
     if (existing) {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("cart_items")
         .update({ quantity: existing.quantity + quantity })
-        .eq("id", existing.id);
-      return !error;
+        .eq("id", existing.id)
+        .select("id")
+        .single();
+      
+      if (error) return null;
+      return data.id;
     }
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("cart_items")
       .insert({
         cart_id: cartId,
         product_id: productId,
         quantity
-      });
-    return !error;
+      })
+      .select("id")
+      .single();
+
+    if (error) return null;
+    return data.id;
   }
 
   /**

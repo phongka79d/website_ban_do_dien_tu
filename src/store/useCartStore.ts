@@ -13,7 +13,7 @@ interface CartState {
   // Actions
   setIsOpen: (open: boolean) => void;
   fetchCart: (userId: string) => Promise<void>;
-  addItem: (product: Product, quantity?: number) => Promise<void>;
+  addItem: (product: Product, quantity?: number) => Promise<string | null>;
   removeItem: (itemId: string) => Promise<void>;
   updateQuantity: (itemId: string, quantity: number) => Promise<void>;
   clearCart: () => void;
@@ -49,17 +49,19 @@ export const useCartStore = create<CartState>((set, get) => ({
 
   addItem: async (product, quantity = 1) => {
     const { cartId, userId } = get();
-    if (!cartId || !userId) return;
+    if (!cartId || !userId) return null;
 
     const supabase = createClient();
-    if (!supabase) return;
+    if (!supabase) return null;
 
-    const success = await CartService.addToCart(supabase, cartId, product.id, quantity);
+    const itemId = await CartService.addToCart(supabase, cartId, product.id, quantity);
     
-    if (success) {
+    if (itemId) {
       const updatedItems = await CartService.fetchCartItems(supabase, cartId);
       set({ items: updatedItems, isOpen: true });
+      return itemId;
     }
+    return null;
   },
 
   updateQuantity: async (itemId, quantity) => {
