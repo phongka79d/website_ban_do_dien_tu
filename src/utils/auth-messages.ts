@@ -16,7 +16,7 @@ const AUTH_MESSAGES: Record<string, string> = {
   "email rate limit exceeded": "Hệ thống tạm thời hết hạn mức gửi Email (Quá tải). Vui lòng thử lại sau khoảng 1h nữa.",
   "Error sending recovery email": "Máy chủ không thể gửi Email OTP. Lỗi cấu hình Máy chủ hoặc Tên người gửi.",
   "New password should be different from the old password": "Mật khẩu mới phải khác với mật khẩu cũ.",
-  "Database error saving new user": "Đã có lỗi xảy ra (69d)",
+  "Database error saving new user": "Đã có lỗi xảy ra khi thêm người dùng mới",
 
   // Custom Application Errors
   "account-blocked": "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ bộ phận CSKH.",
@@ -33,9 +33,13 @@ const AUTH_MESSAGES: Record<string, string> = {
 export function getAuthMessage(error: string | undefined): string {
   if (!error) return AUTH_MESSAGES["unknown-error"];
 
-  // Try to find direct match or partial match for common Supabase errors
+  console.log("Auth Error Received:", error); // Debug message thực tế từ Supabase
+
+  const lowerError = error.toLowerCase();
+
+  // Tìm kiếm linh hoạt trong dictionary
   for (const key in AUTH_MESSAGES) {
-    if (error.includes(key)) {
+    if (lowerError.includes(key.toLowerCase())) {
       return AUTH_MESSAGES[key];
     }
   }
