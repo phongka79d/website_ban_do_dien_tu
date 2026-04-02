@@ -19,10 +19,11 @@ import { createClient } from "@/utils/supabase/client";
 import { useCartStore } from "@/store/useCartStore";
 import { useWishlistStore } from "@/store/useWishlistStore";
 import { User as SupabaseUser } from "@supabase/supabase-js";
-import { isAdmin, getUserName } from "@/utils/auth-helpers";
+import { isAdmin, getUserName, getUserAvatar } from "@/utils/auth-helpers";
 import { signOut } from "@/app/auth/actions";
 import { useTransition } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Avatar } from "@/components/common/Avatar";
 
 import { ProductService } from "@/services/productService";
 import { ProductWithDetails, Category, Brand } from "@/types/database";
@@ -240,7 +241,14 @@ export default function Header() {
                 <div className="group relative">
                   <HeaderAction
                     id="user-menu-target"
-                    icon={<User size={20} className="text-primary" />}
+                    icon={
+                      <Avatar 
+                        src={getUserAvatar(user)} 
+                        fallbackName={getUserName(user)}
+                        size={24}
+                        className="ring-1 ring-primary/10 border-primary/20 shadow-sm"
+                      />
+                    }
                     label={getUserName(user)}
                     subLabel="Xin chào"
                   />

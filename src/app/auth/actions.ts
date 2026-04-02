@@ -62,24 +62,66 @@ export async function signIn(formData: FormData) {
     return { error: getAuthMessage(signInResponse.error.message) };
   }
 
-  // Check if account is active in profiles table
+  // 2. Kiểm tra Profile và thực hiện Tự phục hồi (Self-Healing)
+  let data = signInResponse.data;
+  
+  // DEFENSIVE FIX: Nếu Supabase trả về chuỗi thay vì Object (do lỗi cookie/SSR)
+  if (typeof data === "string") {
+    try {
+      data = JSON.parse(data);
+    } catch (e) {
+      console.error("Failed to parse signInResponse.data string:", e);
+    }
+  }
+
+  const user = data?.user;
   const { data: profile, error: profileFetchError } = await supabase
     .from("profiles")
-    .select("is_active")
-    .eq("id", signInResponse.data.user?.id)
+    .select("is_active, role, avatar_url")
+    .eq("id", user?.id)
     .single();
 
+  // Xử lý lỗi Truy vấn (Trừ lỗi không tìm thấy bản ghi)
   if (profileFetchError && profileFetchError.code !== "PGRST116") {
     console.error("Profile fetch error:", profileFetchError);
   }
 
-  if (!profile) {
-    // Nếu không có profile, nghĩa là user trong auth.users chưa CONFIRM email
-    await supabase.auth.signOut();
-    return { error: "Tài khoản chưa được xác thực email. Vui lòng kiểm tra hộp thư." };
+  // 3. Nếu thiếu Profile hoặc Profile tồn tại nhưng thiếu Avatar -> Tiến hành cập nhật/khôi phục
+  if ((!profile || (profile && !profile.avatar_url)) && user) {
+    console.log("Profile sync triggered for user:", user.id);
+    
+    // Lấy thông tin từ Metadata (đặc biệt là avatar_url từ Google/Facebook)
+    const fullName = user.user_metadata?.full_name || user.email?.split('@')[0] || "Người dùng";
+    const phone = user.user_metadata?.phone || "";
+    const avatarUrl = user.user_metadata?.avatar_url || user.user_metadata?.picture || "";
+
+    const { error: recoveryError } = await supabase
+      .from("profiles")
+      .upsert({
+        id: user.id,
+        full_name: fullName,
+        email: user.email,
+        phone: phone,
+        avatar_url: avatarUrl, // ĐỒNG BỘ ẢNH ĐẠI DIỆN
+        role: profile?.role || "user", // Giữ nguyên role cũ nếu có
+        is_active: profile?.is_active ?? true, // Giữ nguyên trạng thái cũ nếu có
+        updated_at: new Date().toISOString()
+      });
+
+    if (recoveryError) {
+      console.error("Profile sync failed:", recoveryError.message);
+      // Không Sign Out ở đây nếu profile đã tồn tại (chỉ là lỗi sync avatar)
+      if (!profile) {
+        await supabase.auth.signOut();
+        return { error: "Lỗi đồng bộ tài khoản. Vui lòng liên hệ hỗ trợ." };
+      }
+    }
+    
+    console.log("Profile successfully synced for user:", user.id);
   }
 
-  if (profile.is_active === false) {
+  // Kiểm tra Trạng thái Khóa tài khoản (Nếu profile tồn tại)
+  if (profile && profile.is_active === false) {
     await supabase.auth.signOut();
     return { error: getAuthMessage("account-blocked") };
   }

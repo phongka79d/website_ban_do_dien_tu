@@ -87,6 +87,7 @@ export default function ProfileGeneralPage() {
                   <div className="relative">
                     <input
                       value={avatarUrl}
+                      maxLength={1024}
                       onChange={(e) => setAvatarUrl(e.target.value)}
                       placeholder="https://example.com/image.png"
                       className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-10 pr-4 text-sm outline-none transition-all focus:border-primary focus:ring-4 focus:ring-primary/10"
@@ -104,7 +105,7 @@ export default function ProfileGeneralPage() {
                   label="Upload Ảnh từ máy"
                   imageUrl={avatarUrl}
                   categoryFolder="web_ban_do_dien_tu/users/avatars"
-                  onSuccess={(res) => setAvatarUrl(res.info.secure_url)}
+                  onSuccess={(res) => setAvatarUrl(res.info.public_id)}
                   onClose={() => {}}
                   onRemove={() => setAvatarUrl("")}
                 />
@@ -122,6 +123,7 @@ export default function ProfileGeneralPage() {
                 <input
                   required
                   value={fullName}
+                  maxLength={100}
                   onChange={(e) => setFullName(e.target.value)}
                   className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-10 pr-4 text-sm outline-none transition-all focus:border-primary focus:ring-4 focus:ring-primary/10"
                 />
@@ -136,6 +138,7 @@ export default function ProfileGeneralPage() {
                   required
                   type="tel"
                   value={phone}
+                  maxLength={20}
                   onChange={(e) => setPhone(e.target.value)}
                   className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-10 pr-4 text-sm outline-none transition-all focus:border-primary focus:ring-4 focus:ring-primary/10"
                 />

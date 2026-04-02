@@ -10,19 +10,22 @@ export const loginSchema = z.object({
   email: trimString
     .min(1, "Email không được để trống")
     .email("Email không đúng định dạng"),
-  password: z.string().min(8, "Mật khẩu không được nhỏ hơn 8 ký tự"),
+  password: z.string().min(6, "MẬT KHẨU NHẬP K ĐỦ"),
 });
 
 export const registerSchema = z.object({
   email: trimString
     .min(1, "Email không được để trống")
     .email("Email không đúng định dạng"),
-  password: z.string().min(8, "Mật khẩu phải có ít nhất 8 ký tự"),
-  full_name: trimString.min(2, "Họ và tên quá ngắn"),
+  password: z.string()
+    .min(6, "MẬT KHẨU NHẬP K ĐỦ")
+    .regex(/[A-Z]/, "Cần ít nhất 1 chữ hoa")
+    .regex(/[^A-Za-z0-9]/, "Cần ít nhất 1 kí đặc biệt"),
+  full_name: trimString.min(2, "Họtên quá ngắn"),
   phone: trimString.regex(/^[0-9]{10,11}$/, "Số điện thoại không hợp lệ"),
-  confirm_password: z.string().min(1, "Vui lòng xác thực lại mật khẩu"),
+  confirm_password: z.string().min(1, "Vui lòng nhập đủ"),
 }).refine((data) => data.password === data.confirm_password, {
-  message: "Mật khẩu xác nhận không khớp",
+  message: "không trùng",
   path: ["confirm_password"],
 });
 
@@ -33,6 +36,19 @@ export const forgotPasswordSchema = z.object({
     .email("Email không đúng định dạng"),
 });
 
+export const changePasswordSchema = z.object({
+  oldPassword: z.string().min(1, "Vui lòng nhập đủ"),
+  newPassword: z.string()
+    .min(6, "MẬT KHẨU NHẬP K ĐỦ")
+    .regex(/[A-Z]/, "Cần ít nhất 1 chữ hoa")
+    .regex(/[^A-Za-z0-9]/, "Cần ít nhất 1 kí đặc biệt"),
+  confirmPassword: z.string().min(1, "Vui lòng nhập đủ"),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: "không trùng",
+  path: ["confirmPassword"],
+});
+
 export type LoginFormData = z.infer<typeof loginSchema>;
 export type RegisterFormData = z.infer<typeof registerSchema>;
 export type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>;
+export type ChangePasswordFormData = z.infer<typeof changePasswordSchema>;

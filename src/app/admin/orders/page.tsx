@@ -19,7 +19,6 @@ import {
   Hash
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import ConfirmationModal from "@/components/common/ConfirmationModal";
 import NotificationModal from "@/components/common/NotificationModal";
 import { useAdminSearch } from "@/hooks/useAdminSearch";
 import { Pagination } from "@/components/ui/Pagination";
@@ -29,10 +28,22 @@ import { AdminSelect } from "@/components/admin/AdminSelect";
 export default function AdminOrdersPage() {
   const supabase = createClient();
 
-  // Search and Pagination logic
-  const searchFn = useCallback((client: any, query: string, page: number, pageSize: number) => {
-    if (!client) return Promise.resolve({ data: [], count: 0 });
-    return OrderService.searchOrders(client, query, page, pageSize);
+  // Search and Pagination logic - Chuyển sang dùng API tập trung 2.0
+  const searchFn = useCallback(async (_client: any, query: string, page: number, pageSize: number) => {
+    try {
+      const resp = await fetch(`/api/admin/orders?q=${encodeURIComponent(query)}&page=${page}&pageSize=${pageSize}`);
+      const result = await resp.json();
+
+      if (!resp.ok) throw new Error(result.error || "Lỗi tải đơn hàng");
+
+      return {
+        data: result.orders || [],
+        count: result.totalCount || 0
+      };
+    } catch (error: any) {
+      console.error("Fetch Admin Orders failed:", error.message);
+      return { data: [], count: 0 };
+    }
   }, []);
 
   const {
@@ -56,7 +67,7 @@ export default function AdminOrdersPage() {
   // State for modals and detail view
   const [selectedOrder, setSelectedOrder] = useState<OrderWithItems | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [statusUpdateMode, setStatusUpdateMode] = useState<{ id: string, status: string } | null>(null);
+  const [tempStatus, setTempStatus] = useState<string>("");
   const [notification, setNotification] = useState<{ isOpen: boolean; title: string; message: string; type: "success" | "error" }>({
     isOpen: false,
     title: "",
@@ -76,19 +87,21 @@ export default function AdminOrdersPage() {
   };
 
   const handleUpdateStatus = async () => {
-    if (!statusUpdateMode || !supabase) return;
+    if (!selectedOrder || !tempStatus || !supabase) return;
 
     setIsUpdating(true);
-    const { success, error } = await OrderService.updateOrderStatus(supabase, statusUpdateMode.id, statusUpdateMode.status);
+    const { success, error } = await OrderService.updateOrderStatus(supabase, selectedOrder.id, tempStatus);
 
     if (success) {
       setNotification({
         isOpen: true,
         title: "Thành công",
-        message: "Trạng thái đơn hàng đã được cập nhật.",
+        message: `Trạng thái đơn hàng #${selectedOrder.id.slice(0, 8)} đã được cập nhật thành công.`,
         type: "success"
       });
       fetchOrders();
+      // Keep modal open but update local order status if needed (or just close to refresh list)
+      // setSelectedOrder(null); 
     } else {
       setNotification({
         isOpen: true,
@@ -99,7 +112,6 @@ export default function AdminOrdersPage() {
     }
 
     setIsUpdating(false);
-    setStatusUpdateMode(null);
   };
 
   if (loading && page === 1) return (
@@ -190,21 +202,20 @@ export default function AdminOrdersPage() {
                 {/* Vertical Separator */}
                 <div className="h-10 w-[1px] bg-slate-100 hidden md:block" />
 
-                {/* Quick Actions */}
+                {/* Unified Action Button */}
                 <div className="flex gap-2">
                   <button
-                    onClick={() => setSelectedOrder(order)}
-                    className="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 hover:bg-slate-900 hover:text-white flex items-center justify-center transition-all shadow-sm"
-                    title="Chi tiết"
+                    onClick={() => {
+                      setSelectedOrder(order);
+                      // Set initial status for update select
+                      setTempStatus(order.status);
+                    }}
+                    className="px-6 h-12 rounded-2xl bg-primary text-white text-[12px] font-black uppercase tracking-widest flex items-center gap-3 shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all group"
                   >
-                    <Eye size={18} />
-                  </button>
-                  <button
-                    onClick={() => setStatusUpdateMode({ id: order.id, status: order.status })}
-                    className="px-4 h-10 rounded-xl bg-primary text-white text-[11px] font-black uppercase tracking-wider flex items-center gap-2 shadow-lg shadow-primary/20 hover:scale-105 transition-all"
-                  >
-                    <RotateCcw size={14} />
-                    CẬP NHẬT
+                    <div className="w-6 h-6 rounded-lg bg-white/20 flex items-center justify-center group-hover:bg-white/30 transition-colors">
+                      <Eye size={16} />
+                    </div>
+                    XỬ LÝ ĐƠN
                   </button>
                 </div>
               </div>
@@ -247,34 +258,33 @@ export default function AdminOrdersPage() {
       {selectedOrder && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onClick={() => setSelectedOrder(null)} />
-          <div className="relative w-full max-w-2xl bg-white rounded-[40px] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
-            <div className="bg-slate-900 p-10 text-white flex justify-between items-center">
+          <div className="relative w-full max-w-2xl max-h-[90vh] bg-white rounded-[40px] overflow-hidden shadow-2xl flex flex-col animate-in zoom-in-95 duration-300">
+            {/* Header - Fixed */}
+            <div className="bg-slate-900 p-8 text-white flex justify-between items-center shrink-0">
               <div>
-                <h2 className="text-2xl font-black uppercase tracking-tight italic">CHI TIẾT <span className="text-primary italic">ĐƠN HÀNG</span></h2>
-                <p className="text-slate-400 font-bold text-[14px] mt-1">Mã tham chiếu: #{selectedOrder.id}</p>
+                <h2 className="text-xl font-black uppercase tracking-tight italic">CHI TIẾT <span className="text-primary italic">ĐƠN HÀNG</span></h2>
+                <p className="text-slate-400 font-bold text-[12px] mt-1">Mã tham chiếu: #{selectedOrder.id.slice(0, 8).toUpperCase()}</p>
               </div>
-              <button onClick={() => setSelectedOrder(null)} className="w-12 h-12 rounded-2xl bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors">
-                <XCircle size={24} />
-              </button>
             </div>
 
-            <div className="p-10 max-h-[60vh] overflow-y-auto space-y-8 custom-scrollbar">
+            {/* Scrollable Content Area */}
+            <div className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
               {/* Customer & Shipping Info 2.0 */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-slate-50 p-6 rounded-[32px] border border-slate-100">
-                <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-6 rounded-[32px] border border-slate-100">
+                <div className="space-y-3">
                   <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
                     <User size={12} className="text-primary" /> THÔNG TIN KHÁCH HÀNG
                   </h3>
                   <div>
-                    <p className="text-[16px] font-black text-slate-900">{selectedOrder.full_name}</p>
-                    <p className="text-[14px] font-bold text-slate-500">{selectedOrder.phone_number}</p>
+                    <p className="text-[15px] font-black text-slate-900">{selectedOrder.full_name}</p>
+                    <p className="text-[13px] font-bold text-slate-500">{selectedOrder.phone_number}</p>
                   </div>
                 </div>
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
                     <MapPin size={12} className="text-primary" /> ĐỊA CHỈ GIAO HÀNG
                   </h3>
-                  <p className="text-[13px] font-medium text-slate-600 leading-relaxed italic">
+                  <p className="text-[12px] font-medium text-slate-600 leading-relaxed italic">
                     {selectedOrder.shipping_address}
                   </p>
                 </div>
@@ -282,20 +292,20 @@ export default function AdminOrdersPage() {
 
               {/* Product List */}
               <div>
-                <h3 className="text-[12px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">SẢN PHẨM ĐÃ ĐẶT</h3>
+                <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">SẢN PHẨM ĐÃ ĐẶT ({selectedOrder.order_items.length})</h3>
                 <div className="space-y-3">
                   {selectedOrder.order_items.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between p-5 bg-slate-50 rounded-3xl border border-slate-100/50">
-                      <div className="flex items-center gap-5">
-                        <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center font-black text-primary border border-slate-100 shadow-sm">
+                    <div key={item.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100/50">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center font-black text-primary border border-slate-100 shadow-sm text-sm">
                           {item.quantity}x
                         </div>
                         <div>
-                          <p className="text-[15px] font-black text-slate-900">{item.products?.name || "Sản phẩm không còn tồn tại"}</p>
-                          <p className="text-[12px] font-bold text-slate-400 uppercase">Đơn giá: {formatCurrency(item.price_at_purchase)}</p>
+                          <p className="text-[14px] font-black text-slate-900 line-clamp-1">{item.products?.name || "Sản phẩm không tồn tại"}</p>
+                          <p className="text-[11px] font-bold text-slate-400 uppercase">Đơn giá: {formatCurrency(item.price_at_purchase)}</p>
                         </div>
                       </div>
-                      <p className="text-[16px] font-black text-slate-900 italic">
+                      <p className="text-[14px] font-black text-slate-900 italic shrink-0">
                         {formatCurrency(item.price_at_purchase * item.quantity)}
                       </p>
                     </div>
@@ -304,55 +314,63 @@ export default function AdminOrdersPage() {
               </div>
 
               {/* Payment Summary */}
-              <div className="pt-8 border-t border-slate-100 flex flex-col md:flex-row justify-between gap-6">
+              <div className="pt-6 border-t border-slate-100 flex flex-col md:flex-row justify-between gap-4">
                 <div>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Phương thức thanh toán</p>
-                  <p className="text-[15px] font-black text-slate-900 uppercase italic">
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Phương thức thanh toán</p>
+                  <p className="text-[13px] font-black text-slate-900 uppercase italic">
                     {selectedOrder.payment_method === 'cod' ? 'Thanh toán trực tiếp (COD)' : selectedOrder.payment_method}
                   </p>
                 </div>
                 <div className="md:text-right">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Tổng cộng thanh toán</p>
-                  <p className="text-[36px] font-black text-primary italic leading-none">{formatCurrency(selectedOrder.total_amount)}</p>
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Tổng cộng thanh toán</p>
+                  <p className="text-[28px] font-black text-primary italic leading-none">{formatCurrency(selectedOrder.total_amount)}</p>
                 </div>
               </div>
             </div>
 
-            <div className="p-10 bg-slate-50">
-              <Button className="w-full h-14 rounded-2xl bg-slate-900 text-white font-black uppercase text-[14px]" onClick={() => setSelectedOrder(null)}>
-                ĐÓNG CỬA SỔ
-              </Button>
+            {/* Footer - Status Update Area - Fixed/Sticky at the bottom */}
+            <div className="p-8 bg-slate-50 border-t border-slate-100 shrink-0">
+              <div className="flex flex-col gap-4">
+                <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-3">
+                  <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <RotateCcw size={12} className="text-primary" /> CẬP NHẬT TRẠNG THÁI MỚI
+                  </h3>
+                  <div className="flex flex-col md:flex-row items-end gap-3">
+                    <div className="flex-1 w-full">
+                      <AdminSelect
+                        label="Chọn trạng thái đơn hàng"
+                        value={tempStatus}
+                        onChange={(e) => setTempStatus(e.target.value)}
+                        options={[
+                          { value: "pending", label: "Chờ xác nhận" },
+                          { value: "processing", label: "Đã xác nhận (Đang xử lý)" },
+                          { value: "shipped", label: "Đang giao hàng" },
+                          { value: "delivered", label: "Đã hoàn thành (Đã giao)" },
+                          { value: "cancelled", label: "Đã hủy" },
+                        ]}
+                      />
+                    </div>
+                    <Button
+                      className="h-[48px] px-6 bg-primary text-white font-black uppercase text-[11px] tracking-widest shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all shrink-0"
+                      onClick={handleUpdateStatus}
+                      isLoading={isUpdating}
+                    >
+                      CẬP NHẬT
+                    </Button>
+                  </div>
+                </div>
+
+                <Button
+                  className="w-full h-14 rounded-2xl bg-slate-900 text-white font-black uppercase text-[12px] tracking-[0.2em] shadow-lg shadow-slate-900/20 hover:bg-slate-800 active:scale-95 transition-all"
+                  onClick={() => setSelectedOrder(null)}
+                >
+                  ĐÓNG CHI TIẾT
+                </Button>
+              </div>
             </div>
           </div>
         </div>
       )}
-
-      {/* Status Update Modal */}
-      <ConfirmationModal
-        isOpen={!!statusUpdateMode}
-        onClose={() => setStatusUpdateMode(null)}
-        onConfirm={handleUpdateStatus}
-        title="Cập nhật trạng thái"
-        message="Vui lòng chọn trạng thái mới cho đơn hàng này."
-        loading={isUpdating}
-        type="info"
-        confirmText="Xác nhận cập nhật"
-      >
-        <div className="mt-4 w-full">
-          <AdminSelect
-            label="Trạng thái đơn hàng"
-            value={statusUpdateMode?.status || ""}
-            onChange={(e) => setStatusUpdateMode(prev => prev ? { ...prev, status: e.target.value } : null)}
-            options={[
-              { value: "pending", label: "Chờ xác nhận" },
-              { value: "processing", label: "Đã xác nhận (Đang xử lý)" },
-              { value: "shipped", label: "Đang giao hàng" },
-              { value: "delivered", label: "Đã hoàn thành (Đã giao)" },
-              { value: "cancelled", label: "Đã hủy" },
-            ]}
-          />
-        </div>
-      </ConfirmationModal>
 
       <NotificationModal
         isOpen={notification.isOpen}

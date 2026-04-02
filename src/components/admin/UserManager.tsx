@@ -18,6 +18,7 @@ import {
   Phone,
   Hash
 } from "lucide-react";
+import { Avatar } from "@/components/common/Avatar";
 import ConfirmationModal from "@/components/common/ConfirmationModal";
 import NotificationModal from "@/components/common/NotificationModal";
 import AdminManagerShell from "./AdminManagerShell";
@@ -26,6 +27,7 @@ import { Card } from "../ui/Card";
 import { useAdminSearch } from "@/hooks/useAdminSearch";
 import { Pagination } from "../ui/Pagination";
 import { formatDate } from "@/utils/format";
+import { CldImage } from "next-cloudinary";
 
 interface UserManagerProps {
   currentAdminId: string;
@@ -180,13 +182,12 @@ export default function UserManager({ currentAdminId }: UserManagerProps) {
             >
               {/* Profile Section */}
               <div className="flex items-center gap-4 w-full md:w-[30%] shrink-0 min-w-0">
-                <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 overflow-hidden shrink-0 border-2 border-white shadow-sm ring-1 ring-slate-100">
-                  {user.avatar_url ? (
-                    <img src={user.avatar_url} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <User size={24} />
-                  )}
-                </div>
+                <Avatar 
+                  src={user.avatar_url} 
+                  fallbackName={user.full_name}
+                  size={56}
+                  className="shrink-0 border-2 border-white shadow-sm ring-1 ring-slate-100"
+                />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 mb-0.5">
                     <p className="font-black text-slate-900 text-[16px] truncate">

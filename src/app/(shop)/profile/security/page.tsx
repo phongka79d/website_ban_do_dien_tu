@@ -7,11 +7,21 @@ import { verifyOldPasswordAndSendOtp, verifyOtpAndChangePassword } from "@/app/a
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 
+const Requirement = ({ met, text }: { met: boolean; text: string }) => {
+  if (met) return null;
+  return (
+    <div className="text-red-400/80 italic text-[12px] font-medium flex items-center gap-1.5 animate-in fade-in slide-in-from-left-2">
+      <div className="w-1 h-1 rounded-full bg-red-400/50" />
+      {text}
+    </div>
+  );
+};
+
 export default function SecurityPage() {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [message, setMessage] = useState<{ type: "succ" | "err"; text: string } | null>(null);
-  
+
   const [step, setStep] = useState<1 | 2>(1);
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -22,23 +32,33 @@ export default function SecurityPage() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  const validation = {
+    length: newPassword.length >= 6,
+    hasUpper: /[A-Z]/.test(newPassword),
+    hasSpecial: /[^A-Za-z0-9]/.test(newPassword)
+  };
+
+  const isPasswordValid = validation.length && validation.hasUpper && validation.hasSpecial;
+
   const handleStep1Submit = (e: React.FormEvent) => {
     e.preventDefault();
     setMessage(null);
 
-    if (newPassword.length < 6) return setMessage({ type: "err", text: "Mật khẩu phải từ 6 ký tự trở lên!" });
+    if (!isPasswordValid) return setMessage({ type: "err", text: "Mật khẩu mới không đạt yêu cầu bảo mật!" });
     if (newPassword !== confirmPassword) return setMessage({ type: "err", text: "Mật khẩu xác nhận không khớp!" });
 
     startTransition(async () => {
       const formData = new FormData();
       formData.append("oldPassword", oldPassword);
-      
+      formData.append("newPassword", newPassword);
+      formData.append("confirmPassword", confirmPassword);
+
       const res = await verifyOldPasswordAndSendOtp(formData);
-      
+
       if (res.error) {
         setMessage({ type: "err", text: res.error });
       } else {
-        setMessage({ type: "succ", text: "✅ Đã gửi mã OTP 6 số về thư Email của bạn. Vui lòng kiểm tra hộp thư!" });
+        setMessage({ type: "succ", text: "✅ Đã gửi mã OTP 6 số về Email của bạn. Vui lòng kiểm tra hộp thư!" });
         setStep(2);
       }
     });
@@ -54,14 +74,14 @@ export default function SecurityPage() {
       const formData = new FormData();
       formData.append("otp", otp);
       formData.append("newPassword", newPassword);
-      
+
       const res = await verifyOtpAndChangePassword(formData);
-      
+
       if (res.error) {
         setMessage({ type: "err", text: res.error });
       } else {
         setMessage({ type: "succ", text: "Đổi mật khẩu thành công! Hệ thống đang đăng xuất tải lại..." });
-        
+
         // Buộc đăng xuất sau 2s
         setTimeout(async () => {
           const supabase = createClient();
@@ -94,14 +114,14 @@ export default function SecurityPage() {
           <section className="space-y-6 max-w-3xl w-full animate-in fade-in slide-in-from-left-4">
             <div className="space-y-2">
               <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
-                <KeyRound className="text-primary" size={20}/>
+                <KeyRound className="text-primary" size={20} />
                 Đổi mật khẩu bảo mật (Xác minh OTP)
               </h3>
               <p className="text-sm text-slate-500">Bạn cần nhập mật khẩu cũ. Một mã xác minh sẽ được tự động gửi về Email bảo vệ.</p>
             </div>
 
             <form onSubmit={handleStep1Submit} className="space-y-5 bg-slate-50 p-6 rounded-3xl border border-slate-100">
-              
+
               <div className="space-y-1.5">
                 <label className="text-sm font-black text-slate-700">Mật khẩu hiện tại</label>
                 <div className="relative">
@@ -130,8 +150,18 @@ export default function SecurityPage() {
                     {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
+
+                {/* Requirements Checklist - Vertical & Hidden when met */}
+                {newPassword && !isPasswordValid && (
+                  <div className="flex flex-col gap-1.5 p-1 px-4 animate-in slide-in-from-top-2 duration-300">
+
+                    <Requirement met={validation.length} text="Yêu cầu tối thiểu 6 ký tự" />
+                    <Requirement met={validation.hasUpper} text="Cần ít nhất 1 chữ hoa" />
+                    <Requirement met={validation.hasSpecial} text="Cần ít nhất 1 kí đặc biệt" />
+                  </div>
+                )}
               </div>
-              
+
               <div className="space-y-1.5">
                 <label className="text-sm font-black text-slate-700">Xác nhận mật khẩu mới</label>
                 <div className="relative">
@@ -148,7 +178,7 @@ export default function SecurityPage() {
               </div>
 
               <button
-                disabled={isPending || newPassword.length < 6 || !oldPassword}
+                disabled={isPending || !isPasswordValid || !oldPassword || newPassword !== confirmPassword}
                 type="submit"
                 className="w-full flex items-center justify-center gap-2 rounded-2xl bg-primary px-6 py-3.5 text-sm font-black text-white hover:bg-primary-dark hover:shadow-lg hover:shadow-primary/30 disabled:opacity-50 transition-all active:scale-95"
               >

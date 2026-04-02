@@ -30,19 +30,23 @@ const AUTH_MESSAGES: Record<string, string> = {
  * @param error Error message or custom code
  * @returns Translated message
  */
-export function getAuthMessage(error: string | undefined): string {
+export function getAuthMessage(error: any): string {
   if (!error) return AUTH_MESSAGES["unknown-error"];
 
-  console.log("Auth Error Received:", error); // Debug message thực tế từ Supabase
+  // Chống crash nếu error là object, bóc tách message chuỗi
+  const errorMessage = typeof error === 'string' ? error : (error.message || JSON.stringify(error));
 
-  const lowerError = error.toLowerCase();
+  console.log("Auth Error Debug:", errorMessage);
 
-  // Tìm kiếm linh hoạt trong dictionary
+  if (errorMessage === "{}") return AUTH_MESSAGES["unknown-error"];
+
+  const lowerError = errorMessage.toLowerCase();
+
   for (const key in AUTH_MESSAGES) {
     if (lowerError.includes(key.toLowerCase())) {
       return AUTH_MESSAGES[key];
     }
   }
 
-  return error || AUTH_MESSAGES["unknown-error"];
+  return errorMessage || AUTH_MESSAGES["unknown-error"];
 }

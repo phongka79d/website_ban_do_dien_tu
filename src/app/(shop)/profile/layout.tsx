@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { User, ShieldCheck, PackageOpen } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { getUserName, getUserAvatar } from "@/utils/auth-helpers";
+import { Avatar } from "@/components/common/Avatar";
 
 export default function ProfileLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -42,15 +43,12 @@ export default function ProfileLayout({ children }: { children: React.ReactNode 
           <aside className="w-full md:w-1/3 lg:w-1/4 shrink-0">
             <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm overflow-hidden">
               <div className="flex flex-col items-center text-center pb-6 border-b border-slate-100 mb-4">
-                <div className="h-20 w-20 rounded-full bg-slate-100 mb-3 overflow-hidden ring-4 ring-primary/5">
-                  {userData?.avatar ? (
-                    <img src={userData.avatar} alt="Avatar" className="h-full w-full object-cover" />
-                  ) : (
-                    <div className="h-full w-full flex items-center justify-center text-primary font-black text-2xl">
-                      {userData?.name?.charAt(0) || "U"}
-                    </div>
-                  )}
-                </div>
+                <Avatar 
+                  src={userData?.avatar} 
+                  fallbackName={userData?.name}
+                  size={80}
+                  className="mb-3 ring-4 ring-primary/5 shadow-inner"
+                />
                 <h3 className="font-bold text-slate-800 text-lg">{userData?.name || "Đang tải..."}</h3>
                 <p className="text-xs font-semibold text-slate-500 bg-slate-100 px-3 py-1 rounded-full mt-2">Thành viên Smember</p>
               </div>
