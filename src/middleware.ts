@@ -35,27 +35,34 @@ export async function middleware(request: NextRequest) {
   // Refresh session if expired - required for Server Components
   const { data: { user } } = await supabase.auth.getUser();
 
-  // Real-time Lock Check: If user is logged in, check if they are still active
+  // Real-time Lock & Role Check: If user is logged in, check if they are still active and get their latest role
+  let userProfile = null;
   if (user) {
-    const { data: profiles } = await supabase
-      .from("profiles")
-      .select("is_active")
-      .eq("id", user.id);
+    try {
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("is_active, role")
+        .eq("id", user.id);
 
-    const profile = profiles && profiles.length > 0 ? profiles[0] : null;
+      userProfile = profiles && profiles.length > 0 ? profiles[0] : null;
 
-    if (profile && profile.is_active === false) {
-      // Account is locked, sign out and redirect
-      await supabase.auth.signOut();
-      const redirectUrl = new URL("/login", request.url);
-      redirectUrl.searchParams.set("error", "blocked");
-      return NextResponse.redirect(redirectUrl);
+      if (userProfile && userProfile.is_active === false) {
+        // Account is locked, sign out and redirect
+        await supabase.auth.signOut();
+        const redirectUrl = new URL("/login", request.url);
+        redirectUrl.searchParams.set("error", "blocked");
+        return NextResponse.redirect(redirectUrl);
+      }
+    } catch (err) {
+      console.error("Middleware profile fetch error:", err);
     }
   }
 
   // RBAC: Protect admin routes
   if (request.nextUrl.pathname.startsWith("/admin")) {
-    if (!user || !isAdmin(user)) {
+    const isActuallyAdmin = userProfile?.role === "admin" || (user && isAdmin(user));
+    
+    if (!user || !isActuallyAdmin) {
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("returnTo", request.nextUrl.pathname + request.nextUrl.search);
       return NextResponse.redirect(loginUrl);

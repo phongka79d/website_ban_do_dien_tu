@@ -18,6 +18,7 @@ export default function UserMenu() {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [user, setUser] = React.useState<SupabaseUser | null>(null);
+  const [userProfile, setUserProfile] = React.useState<any>(null);
   const [loading, setLoading] = React.useState(true);
   
   const supabase = createClient();
@@ -37,25 +38,50 @@ export default function UserMenu() {
       if (!supabase) return;
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
-      setLoading(false);
+      
+      if (user) {
+        // Fetch real-time profile data (role)
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
+          .single();
+        
+        setUserProfile(profile);
 
-      if (user && !pathname?.startsWith("/admin")) {
-        fetchCart(user.id);
-        fetchWishlist(user.id);
+        if (!pathname?.startsWith("/admin")) {
+          fetchCart(user.id);
+          fetchWishlist(user.id);
+        }
       }
+      setLoading(false);
     };
     getUser();
 
     if (!supabase) return;
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       const newUser = session?.user ?? null;
       setUser(newUser);
-      setLoading(false);
-      if (newUser && !pathname?.startsWith("/admin")) {
-        fetchCart(newUser.id);
-        fetchWishlist(newUser.id);
+
+      if (newUser) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", newUser.id)
+          .single();
+        
+        setUserProfile(profile);
+
+        if (!pathname?.startsWith("/admin")) {
+          fetchCart(newUser.id);
+          fetchWishlist(newUser.id);
+        }
+      } else {
+        setUserProfile(null);
       }
+      
+      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
@@ -116,7 +142,7 @@ export default function UserMenu() {
               <Heart size={18} className="text-red-500" />
               Yêu thích
             </Link>
-            {isAdmin(user) && (
+            {userProfile?.role === "admin" && (
               <Link
                 href="/admin"
                 className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold text-indigo-600 transition-colors hover:bg-indigo-50"
