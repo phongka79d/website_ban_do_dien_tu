@@ -101,8 +101,8 @@ export default function Header() {
           <div className="flex flex-1 items-center justify-end gap-1 md:flex-none">
             <UserMenu />
 
-            {/* Cart Trigger */}
-            <div className="flex items-center gap-1">
+            {/* Cart Trigger - Hidden on Mobile, moved to UserMenu dropdown */}
+            <div className="hidden md:flex items-center gap-1">
               <button
                 onClick={() => router.push("/cart")}
                 className="relative flex flex-col items-center gap-0.5 rounded-xl p-2 text-primary transition-colors hover:bg-primary/10 active:scale-95 md:ml-2"

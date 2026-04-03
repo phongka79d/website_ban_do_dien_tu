@@ -39,7 +39,7 @@ export class CartService {
   }
 
   /**
-   * Thêm sản phẩm vào giỏ hàng
+   * Thêm sản phẩm vào giỏ hàng (Có kiểm tra tồn kho - Stock Validation)
    */
   static async addToCart(
     supabase: SupabaseClient, 
@@ -47,7 +47,20 @@ export class CartService {
     productId: string, 
     quantity: number = 1
   ): Promise<string | null> {
-    // Kiểm tra xem đã có sản phẩm này chưa (Thay maybeSingle) 5.0
+    // 1. Lấy thông tin tồn kho hiện tại
+    const { data: product, error: pError } = await supabase
+      .from("products")
+      .select("stock_quantity")
+      .eq("id", productId)
+      .single();
+
+    if (pError || !product) {
+      throw new Error("Sản phẩm không tồn tại hoặc đã bị gỡ bỏ");
+    }
+
+    const stockAvailable = product.stock_quantity;
+
+    // 2. Kiểm tra xem đã có sản phẩm này trong giỏ chưa
     const { data: existingData } = await supabase
       .from("cart_items")
       .select("id, quantity")
@@ -55,11 +68,23 @@ export class CartService {
       .eq("product_id", productId);
 
     const existing = existingData && existingData.length > 0 ? existingData[0] : null;
+    const currentInCart = existing ? existing.quantity : 0;
+    const totalNeeded = currentInCart + quantity;
 
+    // 3. So sánh với tồn kho
+    if (totalNeeded > stockAvailable) {
+      const remaining = stockAvailable - currentInCart;
+      if (remaining <= 0) {
+        throw new Error(`Sản phẩm này đã hết hàng trong kho`);
+      }
+      throw new Error(`Số lượng sản phẩm trong kho không đủ (Hiện còn: ${stockAvailable})`);
+    }
+
+    // 4. Nếu hợp lệ, tiến hành cập nhật/thêm mới
     if (existing) {
       const { data, error } = await supabase
         .from("cart_items")
-        .update({ quantity: existing.quantity + quantity })
+        .update({ quantity: totalNeeded })
         .eq("id", existing.id)
         .select("id");
       

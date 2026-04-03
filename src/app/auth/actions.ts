@@ -26,7 +26,7 @@ export async function signUp(formData: FormData) {
     return { error: getAuthMessage("email-in-use") };
   }
 
-    const { data: signUpData, error } = await supabase.auth.signUp({
+  const { data: signUpData, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
@@ -79,7 +79,7 @@ export async function signIn(formData: FormData) {
 
   // 2. Kiểm tra Profile và thực hiện Tự phục hồi (Self-Healing)
   let data = signInResponse.data;
-  
+
   // DEFENSIVE FIX: Nếu Supabase trả về chuỗi thay vì Object (do lỗi cookie/SSR)
   if (typeof data === "string") {
     try {
@@ -104,7 +104,7 @@ export async function signIn(formData: FormData) {
   // 3. Nếu thiếu Profile hoặc Profile tồn tại nhưng thiếu Avatar -> Tiến hành cập nhật/khôi phục
   if ((!profile || (profile && !profile.avatar_url)) && user) {
     console.log("Profile sync triggered for user:", user.id);
-    
+
     // Lấy thông tin từ Metadata (đặc biệt là avatar_url từ Google/Facebook)
     const fullName = user.user_metadata?.full_name || user.email?.split('@')[0] || "Người dùng";
     const phone = user.user_metadata?.phone || "";
@@ -131,7 +131,7 @@ export async function signIn(formData: FormData) {
         return { error: "Lỗi đồng bộ tài khoản. Vui lòng liên hệ hỗ trợ." };
       }
     }
-    
+
     console.log("Profile successfully synced for user:", user.id);
   }
 

@@ -56,7 +56,7 @@ export default function OrderCard({ order, userId }: OrderCardProps) {
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Mã đơn hàng</p>
               <div className="flex items-center gap-2">
                 <p className="text-sm font-black text-slate-900">#{order.id.slice(0, 8)}</p>
-                <button 
+                <button
                   onClick={handleCopy}
                   className="p-1.5 hover:bg-slate-50 text-slate-400 hover:text-primary rounded-lg transition-all"
                   title="Copy full ID"
@@ -72,7 +72,6 @@ export default function OrderCard({ order, userId }: OrderCardProps) {
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Ngày đặt</p>
               <p className="text-sm font-bold text-slate-900">{formatDate(order.created_at)}</p>
             </div>
-            <OrderStatusBadge status={order.status} showIcon={false} />
           </div>
         </div>
 
@@ -81,9 +80,9 @@ export default function OrderCard({ order, userId }: OrderCardProps) {
           {order.order_items.map((item) => (
             <div key={item.id} className="flex gap-4">
               <div className="w-16 h-16 relative rounded-xl overflow-hidden bg-slate-50 border border-slate-100 shrink-0 p-2">
-                <ProductImage 
-                  src={item.products?.image_url || ""} 
-                  alt={item.products?.name || "Product"} 
+                <ProductImage
+                  src={item.products?.image_url || ""}
+                  alt={item.products?.name || "Product"}
                   className="object-contain w-full h-full"
                 />
               </div>
@@ -107,7 +106,7 @@ export default function OrderCard({ order, userId }: OrderCardProps) {
             </p>
             <p className="text-[10px] text-slate-400">Đ/c: {order.shipping_address?.slice(0, 20)}...</p>
           </div>
-          
+
           <div className="flex items-center gap-4">
             <div className="text-right mr-2">
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tổng tiền</p>
@@ -115,9 +114,9 @@ export default function OrderCard({ order, userId }: OrderCardProps) {
             </div>
 
             {order.status === 'pending' && (
-              <Button 
-                variant="lightDanger" 
-                size="sm" 
+              <Button
+                variant="lightDanger"
+                size="sm"
                 onClick={() => setShowConfirm(true)}
                 isLoading={loading}
                 className="font-bold text-xs"
