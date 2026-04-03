@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/react";
 import ServiceWorkerManager from "@/components/ServiceWorkerManager";
 import { Suspense } from "react";
 import Header from "@/components/Header";
@@ -34,6 +35,7 @@ export default function RootLayout({
             {children}
           </Suspense>
         </main>
+        <Analytics />
         <Footer />
       </body>
     </html>
