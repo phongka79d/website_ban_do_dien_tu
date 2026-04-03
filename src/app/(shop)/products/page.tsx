@@ -21,7 +21,8 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
   const resolvedParams = await searchParams;
   const page = Number(resolvedParams.page) || 1;
   const pageSize = Number(resolvedParams.pageSize) || 16;
-  const searchQuery = (resolvedParams.search as string) || "";
+  // Support both 'q' (new standard) and 'search' (fallback)
+  const searchQuery = (resolvedParams.q as string) || (resolvedParams.search as string) || "";
   const sortBy = getSortByFromParam(resolvedParams.filter as string);
 
   console.log(`[DEBUG] ProductsPage - sortBy: ${sortBy}`);

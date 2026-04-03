@@ -19,62 +19,40 @@ export class OrderService {
     const { userId, items, totalAmount, shippingAddress, phoneNumber, paymentMethod } = params;
 
     try {
-      // 1. Tạo bản ghi Order
-      const { data: order, error: orderError } = await supabase
-        .from("orders")
-        .insert({
-          user_id: userId,
-          total_amount: totalAmount,
-          shipping_address: shippingAddress,
-          phone_number: phoneNumber,
-          payment_method: paymentMethod,
-          status: 'pending'
-        })
-        .select()
-        .single();
-
-      if (orderError) throw orderError;
-
-      // 2. Tạo các bản ghi Order Items (Lấy snapshot giá tại thời điểm mua)
-      const orderItems = items.map(item => ({
-        order_id: order.id,
-        product_id: item.product_id,
-        quantity: item.quantity,
-        price_at_purchase: item.products?.price || 0
-      }));
-
-      const { error: itemsError } = await supabase
-        .from("order_items")
-        .insert(orderItems);
-
-      if (itemsError) throw itemsError;
-
-      // 3. Cập nhật tồn kho (Stock Quantity) cho từng sản phẩm
-      // Lưu ý: Trong thực tế nên dùng RPC để đảm bảo tính nguyên tử (Atomicity)
-      // Ở đây chúng ta chạy tuần tự hoặc Promise.all cho đơn giản hóa logic TS
-      const stockUpdates = items.map(item => {
-        const currentStock = item.products?.stock_quantity || 0;
-        return supabase
-          .from("products")
-          .update({ stock_quantity: Math.max(0, currentStock - item.quantity) })
-          .eq("id", item.product_id);
+      // Gọi hàm RPC để thực hiện toàn bộ quy trình đặt hàng trong một Transaction duy nhất
+      const { data, error: rpcError } = await supabase.rpc("create_order_v1", {
+        p_user_id: userId,
+        p_total_amount: totalAmount,
+        p_shipping_address: shippingAddress,
+        p_phone_number: phoneNumber,
+        p_payment_method: paymentMethod,
+        p_items: items.map((item) => ({
+          product_id: item.product_id,
+          quantity: item.quantity,
+          price_at_purchase: item.products?.price || 0,
+        })),
       });
 
-      await Promise.all(stockUpdates);
+      if (rpcError) throw rpcError;
 
-      // 4. Xóa các sản phẩm đã đặt khỏi giỏ hàng
-      const { error: clearCartError } = await supabase
-        .from("cart_items")
-        .delete()
-        .in("id", items.map(i => i.id));
+      if (!data.success) {
+        throw new Error(data.error || "Đặt hàng thất bại từ hệ thống Database.");
+      }
 
-      if (clearCartError) {
-        console.warn("Order created but failed to clear cart items:", clearCartError.message);
+      // Lấy thông tin đơn hàng vừa tạo để trả về UI (nếu cần)
+      const { data: order, error: fetchError } = await supabase
+        .from("orders")
+        .select()
+        .eq("id", data.order_id)
+        .single();
+
+      if (fetchError) {
+        console.warn("Order created in DB but failed to fetch for response:", fetchError.message);
       }
 
       return { data: order as Order, error: null };
     } catch (error: any) {
-      console.error("Order creation failed:", error.message || error);
+      console.error("Order creation failed (Atomic RPC):", error.message || error);
       return { data: null, error };
     }
   }

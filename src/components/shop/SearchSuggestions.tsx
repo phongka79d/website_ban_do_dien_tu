@@ -94,7 +94,7 @@ export default function SearchSuggestions({
               <div className="mt-2 border-t border-slate-50 p-2">
                 <Button
                   as={Link}
-                  href={`/products?search=${encodeURIComponent(searchQuery.trim())}`}
+                  href={`/products?q=${encodeURIComponent(searchQuery.trim())}`}
                   onClick={onClose}
                   variant="soft"
                   fullWidth

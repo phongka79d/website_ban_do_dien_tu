@@ -26,7 +26,7 @@ export async function signUp(formData: FormData) {
     return { error: getAuthMessage("email-in-use") };
   }
 
-  const { error } = await supabase.auth.signUp({
+    const { data: signUpData, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
@@ -34,12 +34,27 @@ export async function signUp(formData: FormData) {
         full_name: fullName,
         phone,
         role: "user",
+        avatar_url: "", // Khởi tạo rỗng để tránh null
       },
     },
   });
 
   if (error) {
     return { error: getAuthMessage(error.message) };
+  }
+
+  // 3. Đồng bộ hóa thủ công sang bảng profiles ngay khi đăng ký thành công
+  if (signUpData.user) {
+    await supabase.from("profiles").upsert({
+      id: signUpData.user.id,
+      full_name: fullName,
+      email,
+      phone,
+      avatar_url: "",
+      role: "user",
+      is_active: true,
+      updated_at: new Date().toISOString(),
+    });
   }
 
   revalidatePath("/", "layout");

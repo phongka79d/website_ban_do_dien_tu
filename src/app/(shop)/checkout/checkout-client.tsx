@@ -91,6 +91,8 @@ export default function CheckoutClient({ user, initialItems }: CheckoutClientPro
   };
 
   const handleSubmit = async () => {
+    if (isSubmitting) return;
+    
     const isValid = validateStep1();
     if (!isValid) return;
 
@@ -269,10 +271,10 @@ export default function CheckoutClient({ user, initialItems }: CheckoutClientPro
 
                 <div className="mt-8 flex justify-end">
                     <Button 
-                        size="lg" 
+                        size="default" 
                         onClick={handleNextStep}
-                        className="rounded-full px-10 shadow-xl shadow-pink-500/20 bg-pink-600 hover:bg-pink-700 h-14"
-                        rightIcon={<ArrowRight size={20} />}
+                        className="rounded-full px-7 shadow-xl shadow-pink-500/20 bg-pink-600 hover:bg-pink-700 h-12 text-sm"
+                        rightIcon={<ArrowRight size={18} />}
                     >
                         Tiếp theo
                     </Button>
@@ -344,10 +346,10 @@ export default function CheckoutClient({ user, initialItems }: CheckoutClientPro
                       Quay lại
                     </Button>
                     <Button 
-                        size="lg" 
+                        size="default" 
                         onClick={() => setStep(3)}
-                        className="rounded-full px-10 shadow-xl shadow-pink-500/20 bg-pink-600 hover:bg-pink-700 h-14"
-                        rightIcon={<ArrowRight size={20} />}
+                        className="rounded-full px-7 shadow-xl shadow-pink-500/20 bg-pink-600 hover:bg-pink-700 h-12 text-sm"
+                        rightIcon={<ArrowRight size={18} />}
                     >
                         Xác nhận đơn hàng
                     </Button>
@@ -403,10 +405,11 @@ export default function CheckoutClient({ user, initialItems }: CheckoutClientPro
                     </div>
 
                     <Button 
-                        size="lg" 
+                        size="default" 
                         onClick={handleSubmit}
                         isLoading={isSubmitting}
-                        className="w-full rounded-2xl h-14 text-lg font-black shadow-xl shadow-pink-500/20 bg-pink-600 hover:bg-pink-700"
+                        disabled={isSubmitting}
+                        className="w-full rounded-2xl h-13 text-md font-black shadow-xl shadow-pink-500/20 bg-pink-600 hover:bg-pink-700"
                     >
                         Đặt hàng ngay - {totalAmount.toLocaleString("vi-VN")}₫
                     </Button>

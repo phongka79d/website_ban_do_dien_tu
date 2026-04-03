@@ -22,7 +22,7 @@ function SuccessContent() {
         <Card className="p-12 text-center border-white shadow-2xl bg-white/80 backdrop-blur-md relative overflow-hidden">
           {/* Confetti-like background element */}
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-green-400/10 blur-[80px] rounded-full -z-10" />
-          
+
           <div className="flex justify-center mb-8">
             <motion.div
               initial={{ scale: 0 }}
@@ -36,10 +36,10 @@ function SuccessContent() {
 
           <h1 className="text-4xl font-black text-slate-900 mb-4">Đặt hàng thành công!</h1>
           <p className="text-lg text-slate-500 mb-4">
-            Cảm ơn bạn đã tin tưởng AntigravityS Electronics. 
+            Cảm ơn bạn đã tin tưởng TSShop.
             Đơn hàng của bạn đang được xử lý.
           </p>
-          
+
           <div className="flex flex-col items-center mb-10">
             <div className="bg-slate-50 px-6 py-3 rounded-2xl border border-slate-100 shadow-sm inline-flex items-center gap-3">
               <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Mã đơn hàng:</span>
@@ -51,9 +51,9 @@ function SuccessContent() {
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-lg mx-auto">
             <Link href="/profile/orders" className="flex-1">
-              <Button 
-                variant="outline" 
-                size="lg" 
+              <Button
+                variant="outline"
+                size="lg"
                 fullWidth
                 leftIcon={<ShoppingBag size={20} />}
                 className="rounded-2xl h-16 shadow-sm hover:shadow-md transition-all font-black"
@@ -62,8 +62,8 @@ function SuccessContent() {
               </Button>
             </Link>
             <Link href="/" className="flex-1">
-              <Button 
-                size="lg" 
+              <Button
+                size="lg"
                 fullWidth
                 rightIcon={<ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />}
                 leftIcon={<Home size={20} />}

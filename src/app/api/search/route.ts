@@ -55,14 +55,20 @@ export async function GET(request: Request) {
     // 3. Gộp và trả về kết quả
     const totalResults = productsRes.count + categoriesRes.count + brandsRes.count;
 
+    // Standardize Response Envelope for Postman Testing
     return NextResponse.json({
-      products: productsRes.data,
-      categories: categoriesRes.data,
-      brands: brandsRes.data,
-      total: totalResults,
-      query: q,
-      limit,
-      type
+      success: totalResults > 0 ? true : "Không tìm thấy sản phẩm nào",
+      data: {
+        products: productsRes.data || [],
+        categories: categoriesRes.data || [],
+        brands: brandsRes.data || []
+      },
+      meta: {
+        total: totalResults,
+        query: q,
+        limit,
+        type
+      }
     }, { status: 200 });
 
   } catch (error) {

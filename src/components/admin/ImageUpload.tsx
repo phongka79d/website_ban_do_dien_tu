@@ -58,10 +58,10 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
           onSuccess={onSuccess}
           onClose={onClose}
         >
-          {({ open }) => (
+          {(widget) => (
             <button
               type="button"
-              onClick={() => open()}
+              onClick={() => widget?.open?.()}
               className="w-full py-16 border-2 border-dashed border-slate-200 rounded-3xl text-slate-400 font-medium hover:border-primary hover:text-primary hover:bg-primary/5 transition-all flex flex-col items-center justify-center gap-3 group"
             >
               <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-2xl group-hover:bg-primary group-hover:text-white transition-colors">
