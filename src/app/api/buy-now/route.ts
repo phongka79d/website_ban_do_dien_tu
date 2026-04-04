@@ -31,12 +31,38 @@ export async function POST(request: Request) {
 
     // 2. Lấy dữ liệu từ Request Body
     const body = await request.json();
-    const { productId, quantity = 1, shippingAddress, phoneNumber, paymentMethod } = body;
+    let { productId, quantity = 1, shippingAddress, phoneNumber, paymentMethod } = body;
 
     // Validation cơ bản
     if (!productId || !shippingAddress || !phoneNumber || !paymentMethod) {
       return NextResponse.json(
         { success: false, error: "Thiếu thông tin sản phẩm hoặc thông tin giao hàng" },
+        { status: 400 }
+      );
+    }
+
+    // Kiểm tra tính hợp lệ của địa chỉ giao hàng
+    if (typeof shippingAddress !== "string" || shippingAddress.trim().length <= 12) {
+      return NextResponse.json(
+        { success: false, error: "Vui lòng nhập địa chỉ giao hàng rõ ràng (ít nhất 12 ký tự)" },
+        { status: 400 }
+      );
+    }
+
+    // Kiểm tra phương thức thanh toán
+    const allowedPaymentMethods = ["cod", "card"];
+    if (!allowedPaymentMethods.includes(String(paymentMethod).toLowerCase())) {
+      return NextResponse.json(
+        { success: false, error: "Phương thức thanh toán không hợp lệ (Chỉ hỗ trợ COD hoặc Card)" },
+        { status: 400 }
+      );
+    }
+
+    // Kiểm tra số lượng
+    quantity = Number(quantity);
+    if (!Number.isInteger(quantity) || quantity <= 0) {
+      return NextResponse.json(
+        { success: false, error: "Số lượng sản phẩm không hợp lệ" },
         { status: 400 }
       );
     }
@@ -127,4 +153,4 @@ export async function POST(request: Request) {
     );
   }
 }
- 
+

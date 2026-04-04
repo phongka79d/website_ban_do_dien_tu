@@ -28,12 +28,21 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { productId, quantity = 1 } = body;
+    let { productId, quantity = 1 } = body;
 
     // Validate input
     if (!productId) {
       return NextResponse.json(
         { success: false, error: "Thiếu ID sản phẩm" },
+        { status: 400 }
+      );
+    }
+
+    // Kiểm tra số lượng hợp lệ
+    quantity = Number(quantity);
+    if (!Number.isInteger(quantity) || quantity <= 0) {
+      return NextResponse.json(
+        { success: false, error: "Số lượng sản phẩm không hợp lệ" },
         { status: 400 }
       );
     }
