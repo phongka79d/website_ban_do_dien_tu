@@ -13,18 +13,42 @@ export default function ProfileLayout({ children }: { children: React.ReactNode 
   const [userData, setUserData] = useState<{ name: string; avatar: string | null } | null>(null);
 
   useEffect(() => {
+    let mounted = true;
+
     const fetchUser = async () => {
       const supabase = createClient();
-      if (!supabase) return;
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUserData({
-          name: getUserName(user),
-          avatar: getUserAvatar(user),
-        });
+      if (!supabase) {
+        if (mounted) setUserData({ name: "Khách", avatar: null });
+        return;
+      }
+
+      try {
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error("Auth layout timeout")), 4000)
+        );
+
+        const { data: { user } } = await Promise.race([
+          supabase.auth.getUser(),
+          timeoutPromise
+        ]) as any;
+
+        if (user && mounted) {
+          setUserData({
+            name: getUserName(user),
+            avatar: getUserAvatar(user),
+          });
+        }
+      } catch (err) {
+        console.warn("Profile Layout Load Warning", err);
+        if (mounted) {
+           // Provide a fallback name to exit the 'Đang tải...' state
+           setUserData({ name: "Người dùng", avatar: null });
+        }
       }
     };
+    
     fetchUser();
+    return () => { mounted = false; };
   }, [pathname]); // Refresh user data if pathname changes (after save)
 
   const menuItems = [

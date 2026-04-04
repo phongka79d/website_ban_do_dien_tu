@@ -20,19 +20,41 @@ export default function ProfileGeneralPage() {
   const [avatarUrl, setAvatarUrl] = useState("");
 
   useEffect(() => {
+    let mounted = true;
+
     async function fetchUser() {
       const supabase = createClient();
-      if (!supabase) return;
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setEmail(user.email || "");
-        setFullName(getUserName(user));
-        setPhone(user.user_metadata?.phone || "");
-        setAvatarUrl(getUserAvatar(user) || "");
+      if (!supabase) {
+        if (mounted) setLoading(false);
+        return;
       }
-      setLoading(false);
+      
+      try {
+        // Add a safety timeout
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error("Auth check timeout")), 5000)
+        );
+        
+        const { data: { user } } = await Promise.race([
+          supabase.auth.getUser(),
+          timeoutPromise
+        ]) as any;
+
+        if (user && mounted) {
+          setEmail(user.email || "");
+          setFullName(getUserName(user));
+          setPhone(user.user_metadata?.phone || "");
+          setAvatarUrl(getUserAvatar(user) || "");
+        }
+      } catch (err) {
+        console.warn("Profile Load Warning:", err);
+      } finally {
+        if (mounted) setLoading(false);
+      }
     }
     fetchUser();
+    
+    return () => { mounted = false; };
   }, []);
 
   const handleSubmit = (e: React.FormEvent) => {

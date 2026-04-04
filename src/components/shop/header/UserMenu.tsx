@@ -62,7 +62,15 @@ export default function UserMenu() {
       }
 
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        // Add a safety timeout to prevent infinite loading on Vercel
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error("Auth fetch timeout")), 4000)
+        );
+
+        const { data: { user } } = await Promise.race([
+          supabase.auth.getUser(),
+          timeoutPromise
+        ]) as any;
 
         if (!mounted) return;
         setUser(user);
@@ -85,7 +93,7 @@ export default function UserMenu() {
           if (mounted) setUserProfile(null);
         }
       } catch (error) {
-        console.error("Error loading user data:", error);
+        console.warn("UserMenu Load Auth Warning:", error);
       } finally {
         if (mounted) setLoading(false);
       }
