@@ -13,9 +13,23 @@ export default async function AdminUsersPage() {
   const supabase = await createClient();
   if (!supabase) return <div>Lỗi kết nối Server</div>;
 
-  const { data: { user } } = await supabase.auth.getUser();
+  // Server-Side Timeout để chống treo trên Vercel Edge 3.0
+  const timeoutPromise = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error("Supabase auth timeout in AdminUsersPage")), 5000)
+  );
 
-  if (!user) redirect("/login");
+  let user = null;
+  try {
+    const response = await Promise.race([
+      supabase.auth.getUser(),
+      timeoutPromise
+    ]) as any;
+    user = response.data?.user;
+  } catch (error) {
+    console.error("AdminUsersPage Auth Timeout/Error:", error);
+  }
+
+  if (!user) redirect("/login?error=auth_timeout");
 
   // Kiểm tra vai trò admin 3.0
   const { data: profiles } = await supabase

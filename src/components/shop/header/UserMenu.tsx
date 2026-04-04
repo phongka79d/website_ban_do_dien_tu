@@ -76,19 +76,32 @@ export default function UserMenu() {
         setUser(user);
 
         if (user) {
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("role")
-            .eq("id", user.id)
-            .single();
-
+          // 1. NGAY LẬP TỨC: Dùng Metadata để cập nhật Role & kích hoạt dữ liệu giỏ hàng/yêu thích
+          const isUserAdmin = isAdmin(user);
           if (mounted) {
-            setUserProfile(profile);
+            setUserProfile({ role: isUserAdmin ? "admin" : "user" });
             if (!pathname?.startsWith("/admin")) {
               fetchCart(user.id);
               fetchWishlist(user.id);
             }
           }
+
+          // 2. BACKGROUND SYNC: Lấy profile từ DB mà không chặn UI / chức năng khác
+          (async () => {
+             try {
+                const { data: profile, error } = await supabase
+                  .from("profiles")
+                  .select("role")
+                  .eq("id", user.id)
+                  .single();
+                if (!error && profile && mounted) {
+                   setUserProfile(profile); // Cập nhật lại nếu DB khác Metadata
+                }
+             } catch (e: any) {
+                console.warn("Background profile sync failed", e);
+             }
+          })();
+            
         } else {
           if (mounted) setUserProfile(null);
         }
@@ -108,23 +121,31 @@ export default function UserMenu() {
       if (mounted) setUser(newUser);
 
       if (newUser) {
-        try {
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("role")
-            .eq("id", newUser.id)
-            .single();
-
-          if (mounted) {
-            setUserProfile(profile);
-            if (!pathname?.startsWith("/admin")) {
-              fetchCart(newUser.id);
-              fetchWishlist(newUser.id);
-            }
+        // Hybrid Check Logic cho onAuthStateChange (Tương tự như trên)
+        const isUserAdmin = isAdmin(newUser);
+        if (mounted) {
+          setUserProfile({ role: isUserAdmin ? "admin" : "user" });
+          if (!pathname?.startsWith("/admin")) {
+            fetchCart(newUser.id);
+            fetchWishlist(newUser.id);
           }
-        } catch (error) {
-          console.error("Error updating profile on auth change:", error);
         }
+
+        // Background call
+        (async () => {
+           try {
+              const { data: profile, error } = await supabase
+                .from("profiles")
+                .select("role")
+                .eq("id", newUser.id)
+                .single();
+              if (!error && profile && mounted) {
+                setUserProfile(profile);
+              }
+           } catch (err: any) {
+              console.warn("Background profile err:", err);
+           }
+        })();
       } else {
         if (mounted) {
           setUserProfile(null);
