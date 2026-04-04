@@ -39,12 +39,12 @@ export const forgotPasswordSchema = z.object({
 export const changePasswordSchema = z.object({
   oldPassword: z.string().min(1, "Vui lòng nhập đủ"),
   newPassword: z.string()
-    .min(6, "MẬT KHẨU NHẬP K ĐỦ")
+    .min(6, "Vui lòng nhập mật khẩu")
     .regex(/[A-Z]/, "Cần ít nhất 1 chữ hoa")
     .regex(/[^A-Za-z0-9]/, "Cần ít nhất 1 kí đặc biệt"),
   confirmPassword: z.string().min(1, "Vui lòng nhập đủ"),
 }).refine((data) => data.newPassword === data.confirmPassword, {
-  message: "không trùng",
+  message: "Chưa trùng mật khẩu",
   path: ["confirmPassword"],
 });
 
