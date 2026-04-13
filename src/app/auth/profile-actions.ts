@@ -82,7 +82,7 @@ export async function verifyOldPasswordAndSendOtp(formData: FormData) {
   }
 
   // 2. Kiểm tra mật khẩu nhập k đủ ký tự
-  if (newPassword.length < 6) return { error: "MẬT KHẨU NHẬP K ĐỦ!" };
+  if (newPassword.length < 6) return { error: "MẬT KHẨU NHẬP KHÔNG ĐỦ KÝ TỰ!" };
 
   // 3. Kiểm tra tính hợp lệ (Chữ hoa & Đặc biệt)
   if (!/[A-Z]/.test(newPassword)) return { error: "Mật khẩu cần ít nhất 1 chữ hoa!" };
@@ -90,6 +90,9 @@ export async function verifyOldPasswordAndSendOtp(formData: FormData) {
 
   // 4. Kiểm tra mật khẩu không trùng
   if (newPassword !== confirmPassword) return { error: "Mật khẩu mới không trùng khớp!" };
+
+  // 4.5. Kiểm tra mật khẩu mới không được trùng với mật khẩu cũ
+  if (newPassword === oldPassword) return { error: "Mật khẩu mới không được trùng với mật khẩu cũ!" };
 
   // 5. Phép thử mật khẩu cũ
   const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -117,7 +120,7 @@ export async function verifyOtpAndChangePassword(formData: FormData) {
   const newPassword = formData.get("newPassword") as string;
 
   // Re-validation
-  if (newPassword.length < 6) return { error: "MẬT KHẨU NHẬP K ĐỦ!" };
+  if (newPassword.length < 6) return { error: "MẬT KHẨU NHẬP KHÔNG ĐỦ!" };
 
   // 1. Cổng Check Mã OTP 
   const { error: otpError } = await supabase.auth.verifyOtp({
@@ -132,5 +135,5 @@ export async function verifyOtpAndChangePassword(formData: FormData) {
   const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
   if (updateError) return { error: getAuthMessage(updateError.message) };
 
-  return { success: "đổi mật khẩu thành công" };
+  return { success: "Đổi mật khẩu thành công" };
 }

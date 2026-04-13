@@ -92,11 +92,11 @@ export class UserService {
   static async updateRole(
     supabase: SupabaseClient,
     targetUserId: string,
-    newRole: "admin" | "user",
+    newRole: "admin" | "staff" | "user",
     currentAdminId: string
   ) {
     // Chống tự hạ quyền của chính mình (Để tránh mất quyền Admin vô ý)
-    if (targetUserId === currentAdminId && newRole === "user") {
+    if (targetUserId === currentAdminId && newRole !== "admin") {
       return { error: "Bạn không thể tự hạ quyền của chính mình." };
     }
 

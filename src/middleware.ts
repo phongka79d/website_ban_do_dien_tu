@@ -1,6 +1,6 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { isAdmin } from "@/utils/auth-helpers";
+import { isAdmin, isStaff } from "@/utils/auth-helpers";
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
@@ -61,11 +61,22 @@ export async function middleware(request: NextRequest) {
   // RBAC: Protect admin routes
   if (request.nextUrl.pathname.startsWith("/admin")) {
     const isActuallyAdmin = userProfile?.role === "admin" || (user && isAdmin(user));
+    const isActuallyStaff = userProfile?.role === "staff" || (user && isStaff(user));
     
-    if (!user || !isActuallyAdmin) {
+    // Nếu không phải Admin và không phải Staff -> văng ra Login
+    if (!user || (!isActuallyAdmin && !isActuallyStaff)) {
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("returnTo", request.nextUrl.pathname + request.nextUrl.search);
       return NextResponse.redirect(loginUrl);
+    }
+
+    // Role Staff: Chặn truy cập trang Quản lý KH, Banner, Cài đặt
+    if (isActuallyStaff) {
+      const restrictedRoutes = ["/admin/users", "/admin/banners", "/admin/settings"];
+      const isRestricted = restrictedRoutes.some(route => request.nextUrl.pathname.startsWith(route));
+      if (isRestricted) {
+        return NextResponse.redirect(new URL("/admin", request.url)); // Trả về Dashboard
+      }
     }
   }
 

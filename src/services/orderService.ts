@@ -65,6 +65,7 @@ export class OrderService {
       .from("orders")
       .select(`
         *,
+
         order_items (
           *,
           products (*)
@@ -89,6 +90,7 @@ export class OrderService {
       .from("orders")
       .select(`
         *,
+
         order_items (
           *,
           products (*)
@@ -102,14 +104,23 @@ export class OrderService {
       return null;
     }
 
-    return data as OrderWithItems;
+    let resultData = data as OrderWithItems;
+    
+    if (resultData && resultData.user_id) {
+       const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', resultData.user_id).single();
+       if (profile) {
+         resultData.profiles = profile;
+       }
+    }
+
+    return resultData;
   }
 
   /**
    * Tra cứu đơn hàng công khai (Chỉ cần Mã đơn hàng)
    */
   static async fetchOrderByPublicInfo(
-    supabase: SupabaseClient, 
+    supabase: SupabaseClient,
     orderId: string
   ): Promise<{ data: OrderWithItems | null; error: string | null }> {
     try {
@@ -117,6 +128,7 @@ export class OrderService {
         .from("orders")
         .select(`
           *,
+  
           order_items (
             *,
             products (*)
@@ -130,7 +142,14 @@ export class OrderService {
         throw error;
       }
 
-      return { data: data as OrderWithItems, error: null };
+      let resultData = data as OrderWithItems;
+      if (resultData && resultData.user_id) {
+         const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', resultData.user_id).single();
+         if (profile) {
+           resultData.profiles = profile;
+         }
+      }
+      return { data: resultData, error: null };
     } catch (error: any) {
       console.error("Error in fetchOrderByPublicInfo:", error.message);
       return { data: null, error: error.message };
@@ -185,11 +204,11 @@ export class OrderService {
         .select();
 
       if (error) throw error;
-      
+
       if (!data || data.length === 0) {
         throw new Error("Không có bản ghi nào được cập nhật. Có thể do RLS policy hoặc ID sai.");
       }
-      
+
       return { success: true, error: null };
     } catch (error: any) {
       console.error("Error updating order status:", error.message || error);
@@ -205,6 +224,7 @@ export class OrderService {
       .from("orders")
       .select(`
         *,
+
         order_items (
           *,
           products (*)
@@ -217,15 +237,35 @@ export class OrderService {
       return [];
     }
 
-    return (data as OrderWithItems[]) || [];
+    let resultData = (data as OrderWithItems[]) || [];
+    if (resultData.length > 0) {
+      const userIds = [...new Set(resultData.map(order => order.user_id).filter(id => id))];
+      if (userIds.length > 0) {
+        const { data: profilesData } = await supabase.from('profiles').select('id, full_name').in('id', userIds);
+        if (profilesData) {
+          const profileMap = profilesData.reduce((acc, p) => {
+            acc[p.id] = { full_name: p.full_name };
+            return acc;
+          }, {} as Record<string, { full_name: string | null }>);
+          
+          resultData = resultData.map(order => ({
+            ...order,
+            profiles: profileMap[order.user_id] || null
+          }));
+        }
+      }
+    }
+
+    return resultData;
   }
 
   /**
    * Tìm kiếm đơn hàng với Phân trang (Dành cho Admin)
    */
   static async searchOrders(
-    supabase: SupabaseClient, 
+    supabase: SupabaseClient,
     query: string,
+    filter: string = "all",
     page: number = 1,
     pageSize: number = 20
   ): Promise<{ data: OrderWithItems[]; count: number }> {
@@ -236,18 +276,49 @@ export class OrderService {
       .from("orders")
       .select(`
         *,
+
         order_items (
           *,
           products (*)
         )
       `, { count: "exact" });
-    
+
     if (query) {
-      // Tìm theo Tên, Số điện thoại hoặc Địa chỉ
-      baseQuery = baseQuery.or(`full_name.ilike.%${query}%,phone_number.ilike.%${query}%,shipping_address.ilike.%${query}%`);
+      const cleanQuery = query.trim();
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanQuery);
+
+      if (filter === "id") {
+        if (isUUID) {
+          baseQuery = baseQuery.eq("id", cleanQuery);
+        } else {
+          baseQuery = baseQuery.eq("id", "00000000-0000-0000-0000-000000000000");
+        }
+      } else if (filter === "phone") {
+        baseQuery = baseQuery.ilike("phone_number", `%${cleanQuery}%`);
+      } else if (filter === "address") {
+        baseQuery = baseQuery.ilike("shipping_address", `%${cleanQuery}%`);
+      } else if (filter === "name") {
+        const { data: profiles } = await supabase.from("profiles").select("id").ilike("full_name", `%${cleanQuery}%`);
+        if (profiles && profiles.length > 0) {
+          baseQuery = baseQuery.in("user_id", profiles.map((p) => p.id));
+        } else {
+          baseQuery = baseQuery.eq("id", "00000000-0000-0000-0000-000000000000");
+        }
+      } else {
+        if (isUUID) {
+          baseQuery = baseQuery.eq("id", cleanQuery);
+        } else {
+          const { data: profiles } = await supabase.from("profiles").select("id").ilike("full_name", `%${cleanQuery}%`);
+          let orClause = `phone_number.ilike.%${cleanQuery}%,shipping_address.ilike.%${cleanQuery}%`;
+          if (profiles && profiles.length > 0) {
+            orClause += `,user_id.in.(${profiles.map((p) => p.id).join(",")})`;
+          }
+          baseQuery = baseQuery.or(orClause);
+        }
+      }
     }
 
-    const { data, error, count } = await baseQuery
+    const { data: rawData, error, count } = await baseQuery
       .order("created_at", { ascending: false })
       .range(from, to);
 
@@ -255,10 +326,31 @@ export class OrderService {
       console.error("Supabase Error [searchOrders]:", error.message);
       return { data: [], count: 0 };
     }
+    
+    let resultData = (rawData as OrderWithItems[]) || [];
+    
+    // Gán dữ liệu profiles ở Application-layer vì Auth.users bị giới hạn Join không có khóa ngoại
+    if (resultData.length > 0) {
+      const userIds = [...new Set(resultData.map(order => order.user_id).filter(id => id))];
+      if (userIds.length > 0) {
+        const { data: profilesData } = await supabase.from('profiles').select('id, full_name').in('id', userIds);
+        if (profilesData) {
+          const profileMap = profilesData.reduce((acc, p) => {
+            acc[p.id] = { full_name: p.full_name };
+            return acc;
+          }, {} as Record<string, { full_name: string | null }>);
+          
+          resultData = resultData.map(order => ({
+            ...order,
+            profiles: profileMap[order.user_id] || null
+          }));
+        }
+      }
+    }
 
-    return { 
-      data: (data as OrderWithItems[]) || [], 
-      count: count || 0 
+    return {
+      data: resultData,
+      count: count || 0
     };
   }
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyOldPasswordAndSendOtp, verifyOtpAndChangePassword } from "@/app/auth/profile-actions";
 import { createClient } from "@/utils/supabase/server";
+import { changePasswordSchema } from "@/lib/validations/auth";
 
 /**
  * API Route for Postman Testing: /api/auth/change-password
@@ -41,12 +42,26 @@ export async function POST(req: NextRequest) {
     // Step 2: If OTP is provided, finish the process
     if (otp) {
       const result = await verifyOtpAndChangePassword(formData);
+      if (result.error) {
+        return NextResponse.json(result, { status: result.error.includes("OTP") ? 401 : 400 });
+      }
       return NextResponse.json(result);
     }
 
     // Step 1: Verify old and send OTP
+    const zodValid = changePasswordSchema.safeParse({ oldPassword, newPassword, confirmPassword });
+    if (!zodValid.success) {
+      return NextResponse.json({ error: zodValid.error.issues[0].message }, { status: 400 });
+    }
+
     const result = await verifyOldPasswordAndSendOtp(formData);
     console.log("verifyOldPasswordAndSendOtp Result:", result);
+
+    if (result.error) {
+      const statusCode = result.error.includes("Mật khẩu cũ không chính xác") ? 401 : 400;
+      return NextResponse.json(result, { status: statusCode });
+    }
+
     return NextResponse.json(result);
 
   } catch (error) {

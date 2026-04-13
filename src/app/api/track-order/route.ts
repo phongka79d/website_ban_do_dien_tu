@@ -51,7 +51,7 @@ export async function GET(request: Request) {
         id: data.id,
         status: data.status,
         total_amount: data.total_amount,
-        full_name: data.full_name,
+        full_name: data.profiles?.full_name || "Khách hàng",
         phone_number: data.phone_number,
         shipping_address: data.shipping_address,
         payment_method: data.payment_method,

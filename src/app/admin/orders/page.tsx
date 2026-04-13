@@ -13,10 +13,12 @@ import {
   ChevronRight,
   Clock,
   CheckCircle2,
+  ListFilter,
   Truck,
   RotateCcw,
   XCircle,
-  Hash
+  Hash,
+  Download
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import NotificationModal from "@/components/common/NotificationModal";
@@ -28,10 +30,26 @@ import { AdminSelect } from "@/components/admin/AdminSelect";
 export default function AdminOrdersPage() {
   const supabase = createClient();
 
+  const [filterType, setFilterType] = useState<string>("all");
+  const [exportMonth, setExportMonth] = useState((new Date().getMonth() + 1).toString());
+  const [exportYear, setExportYear] = useState(new Date().getFullYear().toString());
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExportExcel = async () => {
+    setIsExporting(true);
+    try {
+      window.open(`/api/admin/orders?export=true&month=${exportMonth}&year=${exportYear}`, '_blank');
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setTimeout(() => setIsExporting(false), 2000);
+    }
+  };
+
   // Search and Pagination logic - Chuyển sang dùng API tập trung 2.0
   const searchFn = useCallback(async (_client: any, query: string, page: number, pageSize: number) => {
     try {
-      const resp = await fetch(`/api/admin/orders?q=${encodeURIComponent(query)}&page=${page}&pageSize=${pageSize}`);
+      const resp = await fetch(`/api/admin/orders?q=${encodeURIComponent(query)}&filter=${filterType}&page=${page}&pageSize=${pageSize}`);
       const result = await resp.json();
 
       if (!resp.ok) throw new Error(result.error || "Lỗi tải đơn hàng");
@@ -44,7 +62,7 @@ export default function AdminOrdersPage() {
       console.error("Fetch Admin Orders failed:", error.message);
       return { data: [], count: 0 };
     }
-  }, []);
+  }, [filterType]);
 
   const {
     searchTerm,
@@ -114,12 +132,7 @@ export default function AdminOrdersPage() {
     setIsUpdating(false);
   };
 
-  if (loading && page === 1) return (
-    <div className="flex flex-col items-center justify-center min-h-[400px]">
-      <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-      <p className="mt-4 text-slate-400 font-black animate-pulse text-[14px] uppercase tracking-widest">Đang truy xuất dữ liệu đơn hàng...</p>
-    </div>
-  );
+  // Render logic optimized for UX: Keep header visible while loading
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -134,94 +147,186 @@ export default function AdminOrdersPage() {
           </p>
         </div>
 
-        {/* Search Bar */}
-        <div className="relative w-full max-w-2xl group">
-          <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-primary transition-colors" size={20} />
-          <input
-            type="text"
-            placeholder="Tìm theo Mã đơn, Họ tên, Số điện thoại hoặc Địa chỉ..."
-            className="w-full pl-14 pr-6 py-5 rounded-[24px] border border-slate-100 bg-white shadow-sm focus:border-primary outline-none transition-all placeholder:text-slate-300 font-bold text-[15px]"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+        {/* Search Bar & Filter & Export */}
+        <div className="flex flex-col xl:flex-row w-full gap-4 items-center">
+          <div className="flex flex-col sm:flex-row w-full xl:w-2/3 gap-4 group">
+          <div className="relative min-w-[200px] shrink-0">
+            <ListFilter className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <select
+              title="Bộ lọc tìm kiếm"
+              className="w-full pl-12 pr-10 py-5 rounded-[24px] border border-slate-100 bg-white shadow-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-bold text-[14px] text-slate-700 appearance-none cursor-pointer"
+              value={filterType}
+              onChange={(e) => {
+                setFilterType(e.target.value);
+                setPage(1);
+              }}
+            >
+              <option value="all">Tất cả Thông tin</option>
+              <option value="id">Mã đơn hàng (UUID)</option>
+              <option value="phone">Số điện thoại</option>
+              <option value="name">Tên khách hàng</option>
+              <option value="address">Khu vực / Địa chỉ</option>
+            </select>
+            <ChevronRight className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300 pointer-events-none rotate-90" size={16} />
+          </div>
+          
+          <div className="relative flex-1">
+            <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-primary transition-colors" size={20} />
+            <input
+              type="text"
+              placeholder={
+                filterType === "id" ? "Vui lòng nhập chính xác Mã UUID..." :
+                filterType === "phone" ? "Nhập Số điện thoại..." :
+                filterType === "name" ? "Nhập tên người nhận..." :
+                filterType === "address" ? "Tìm theo Phường, Quận, Thành phố..." :
+                "Tìm theo Mã đơn, Họ tên, SĐT hoặc Địa chỉ..."
+              }
+              className="w-full pl-14 pr-6 py-5 rounded-[24px] border border-slate-100 bg-white shadow-sm focus:border-primary outline-none transition-all placeholder:text-slate-300 font-bold text-[15px]"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </div>
+
+          {/* Export Excel Module */}
+          <div className="flex flex-row w-full xl:w-1/3 gap-2 bg-white p-2 rounded-[24px] border border-slate-100 shadow-sm">
+            <select
+              className="flex-1 py-3 px-4 rounded-[16px] bg-slate-50 text-slate-700 font-bold text-[14px] outline-none hover:bg-slate-100 transition-colors cursor-pointer appearance-none"
+              value={exportMonth}
+              onChange={(e) => setExportMonth(e.target.value)}
+            >
+              {[...Array(12)].map((_, i) => (
+                <option key={i + 1} value={i + 1}>Tháng {i + 1}</option>
+              ))}
+            </select>
+            
+            <select
+              className="flex-1 py-3 px-4 rounded-[16px] bg-slate-50 text-slate-700 font-bold text-[14px] outline-none hover:bg-slate-100 transition-colors cursor-pointer appearance-none"
+              value={exportYear}
+              onChange={(e) => setExportYear(e.target.value)}
+            >
+              {[2024, 2025, 2026].map(y => (
+                <option key={y} value={y}>Năm {y}</option>
+              ))}
+            </select>
+
+            <button
+              onClick={handleExportExcel}
+              disabled={isExporting}
+              className={`flex shrink-0 items-center justify-center gap-2 px-5 py-3 rounded-[16px] font-black text-[13px] transition-all
+                ${isExporting 
+                  ? 'bg-primary/50 cursor-not-allowed text-white' 
+                  : 'bg-primary text-white hover:bg-primary/90 hover:scale-[0.98]'
+                }`}
+              title="Xuất bảng Excel"
+            >
+              <Download size={16} className={isExporting ? 'animate-bounce' : ''} />
+            </button>
+          </div>
         </div>
       </header>
 
       {/* Orders List - Vertical & Simplified Style 2.0 */}
-      <div className="flex flex-col gap-3">
-        {orders.map((order) => {
-          const status = getStatusInfo(order.status);
-          return (
-            <div
-              key={order.id}
-              className="group bg-white rounded-3xl border border-slate-100 p-4 pl-6 pr-6 hover:shadow-xl hover:border-primary/20 transition-all duration-300 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden"
-            >
-              {/* Left Part: ID & Time */}
-              <div className="flex items-center gap-6 min-w-[200px]">
-                <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
-                  <Hash size={18} />
-                </div>
-                <div>
-                  <span className="text-[14px] font-black text-slate-900 block tracking-tight">#{order.id.slice(0, 8).toUpperCase()}</span>
-                  <span className="text-[11px] font-bold text-slate-400 flex items-center gap-1.5">
-                    <Clock size={10} />
-                    {formatDate(order.created_at)}
-                  </span>
-                </div>
-              </div>
-
-              {/* Middle Part: Customer Info - Refined 2.0 */}
-              <div className="flex-1 flex items-center gap-8 px-6 border-l border-slate-50 hidden md:flex min-w-0">
-                <div className="flex items-center gap-3 shrink-0">
-                  <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-500">
-                    <User size={14} />
-                  </div>
-                  <div className="max-w-[150px]">
-                    <p className="text-[13px] font-black text-slate-800 truncate">{order.full_name}</p>
-                    <p className="text-[11px] font-bold text-slate-400">{order.phone_number}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Right Part: Value & Status & Actions */}
-              <div className="flex items-center gap-8">
-                {/* Amount */}
-                <div className="text-right min-w-[140px]">
-                  <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest block">TỔNG GIÁ TRỊ</span>
-                  <span className="text-[18px] font-black text-slate-900 italic tracking-tighter">
-                    {formatCurrency(order.total_amount)}
-                  </span>
-                </div>
-
-                {/* Status Badge */}
-                <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-black border ${status.color} min-w-[130px] justify-center`}>
-                  {status.icon}
-                  <span className="tracking-wide uppercase">{status.label}</span>
-                </div>
-
-                {/* Vertical Separator */}
-                <div className="h-10 w-[1px] bg-slate-100 hidden md:block" />
-
-                {/* Unified Action Button */}
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => {
-                      setSelectedOrder(order);
-                      // Set initial status for update select
-                      setTempStatus(order.status);
-                    }}
-                    className="px-6 h-12 rounded-2xl bg-primary text-white text-[12px] font-black uppercase tracking-widest flex items-center gap-3 shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all group"
-                  >
-                    <div className="w-6 h-6 rounded-lg bg-white/20 flex items-center justify-center group-hover:bg-white/30 transition-colors">
-                      <Eye size={16} />
+      <div className="flex flex-col gap-3 min-h-[400px]">
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20 bg-white/50 backdrop-blur-[2px] rounded-[40px] border border-slate-100">
+            <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+            <p className="mt-4 text-slate-400 font-black animate-pulse text-[12px] uppercase tracking-widest">Đang cập nhật danh sách...</p>
+          </div>
+        ) : (
+          <>
+            {orders.map((order) => {
+              const status = getStatusInfo(order.status);
+              return (
+                <div
+                  key={order.id}
+                  className="group bg-white rounded-3xl border border-slate-100 p-4 pl-6 pr-6 hover:shadow-xl hover:border-primary/20 transition-all duration-300 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden"
+                >
+                  {/* Left Part: ID & Time */}
+                  <div className="flex items-center gap-6 min-w-[200px]">
+                    <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                      <Hash size={18} />
                     </div>
-                    XỬ LÝ ĐƠN
-                  </button>
+                    <div>
+                      <span className="text-[14px] font-black text-slate-900 block tracking-tight">#{order.id.slice(0, 8).toUpperCase()}</span>
+                      <span className="text-[11px] font-bold text-slate-400 flex items-center gap-1.5">
+                        <Clock size={10} />
+                        {formatDate(order.created_at)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Middle Part: Customer Info - Refined 2.0 */}
+                  <div className="flex-1 flex items-center gap-8 px-6 border-l border-slate-50 hidden md:flex min-w-0">
+                    <div className="flex items-center gap-3 shrink-0">
+                      <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-500">
+                        <User size={14} />
+                      </div>
+                      <div className="max-w-[150px]">
+                        <p className="text-[13px] font-black text-slate-800 truncate">{order.profiles?.full_name || "Khách hàng không tên"}</p>
+                        <p className="text-[11px] font-bold text-slate-400">{order.phone_number}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Part: Value & Status & Actions */}
+                  <div className="flex items-center gap-8">
+                    {/* Amount */}
+                    <div className="text-right min-w-[140px]">
+                      <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest block">TỔNG GIÁ TRỊ</span>
+                      <span className="text-[18px] font-black text-slate-900 italic tracking-tighter">
+                        {formatCurrency(order.total_amount)}
+                      </span>
+                    </div>
+
+                    {/* Status Badge */}
+                    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-black border ${status.color} min-w-[130px] justify-center`}>
+                      {status.icon}
+                      <span className="tracking-wide uppercase">{status.label}</span>
+                    </div>
+
+                    {/* Vertical Separator */}
+                    <div className="h-10 w-[1px] bg-slate-100 hidden md:block" />
+
+                    {/* Unified Action Button */}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          setSelectedOrder(order);
+                          // Set initial status for update select
+                          setTempStatus(order.status);
+                        }}
+                        className="px-6 h-12 rounded-2xl bg-primary text-white text-[12px] font-black uppercase tracking-widest flex items-center gap-3 shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all group"
+                      >
+                        <div className="w-6 h-6 rounded-lg bg-white/20 flex items-center justify-center group-hover:bg-white/30 transition-colors">
+                          <Eye size={16} />
+                        </div>
+                        XỬ LÝ ĐƠN
+                      </button>
+                    </div>
+                  </div>
                 </div>
+              );
+            })}
+
+            {/* Empty State - Di chuyển vào trong fragment của list để không hiển thị đè lên loading */}
+            {orders.length === 0 && (
+              <div className="py-32 flex flex-col items-center justify-center bg-white rounded-[40px] border-2 border-dashed border-slate-100">
+                <div className="w-24 h-24 rounded-3xl bg-slate-50 flex items-center justify-center mb-6">
+                  <Package size={48} className="text-slate-200" />
+                </div>
+                <h3 className="text-[20px] font-black text-slate-900 uppercase">Không tìm thấy Đơn hàng</h3>
+                <p className="text-slate-400 font-bold mt-2">Dữ liệu truy xuất không khớp với từ khóa tìm kiếm của bạn.</p>
+                <button
+                  onClick={() => setSearchTerm("")}
+                  className="mt-6 text-primary font-black uppercase text-[13px] tracking-widest hover:underline"
+                >
+                  LÀM MỚI BỘ LỌC
+                </button>
               </div>
-            </div>
-          );
-        })}
+            )}
+          </>
+        )}
       </div>
 
       {/* Pagination */}
@@ -237,22 +342,6 @@ export default function AdminOrdersPage() {
         />
       )}
 
-      {/* Empty State */}
-      {orders.length === 0 && !loading && (
-        <div className="py-32 flex flex-col items-center justify-center bg-white rounded-[40px] border-2 border-dashed border-slate-100">
-          <div className="w-24 h-24 rounded-3xl bg-slate-50 flex items-center justify-center mb-6">
-            <Package size={48} className="text-slate-200" />
-          </div>
-          <h3 className="text-[20px] font-black text-slate-900 uppercase">Không tìm thấy Đơn hàng</h3>
-          <p className="text-slate-400 font-bold mt-2">Dữ liệu truy xuất không khớp với từ khóa tìm kiếm của bạn.</p>
-          <button
-            onClick={() => setSearchTerm("")}
-            className="mt-6 text-primary font-black uppercase text-[13px] tracking-widest hover:underline"
-          >
-            LÀM MỚI BỘ LỌC
-          </button>
-        </div>
-      )}
 
       {/* Order Detail View Modal */}
       {selectedOrder && (
@@ -276,7 +365,7 @@ export default function AdminOrdersPage() {
                     <User size={12} className="text-primary" /> THÔNG TIN KHÁCH HÀNG
                   </h3>
                   <div>
-                    <p className="text-[15px] font-black text-slate-900">{selectedOrder.full_name}</p>
+                    <p className="text-[15px] font-black text-slate-900">{selectedOrder.profiles?.full_name || "Khách hàng không tên"}</p>
                     <p className="text-[13px] font-bold text-slate-500">{selectedOrder.phone_number}</p>
                   </div>
                 </div>

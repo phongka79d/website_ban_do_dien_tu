@@ -16,6 +16,20 @@ export function isAdmin(user: User | null | undefined): boolean {
 }
 
 /**
+ * Checks if a user has staff privileges.
+ * 
+ * @param user The Supabase user object
+ * @returns boolean True if the user is a staff
+ */
+export function isStaff(user: User | null | undefined): boolean {
+  if (!user) return false;
+  
+  // Check user_metadata for role
+  const role = user.app_metadata?.role || user.user_metadata?.role;
+  return role === "staff";
+}
+
+/**
  * Gets the user's full name from metadata.
  */
 export function getUserName(user: User | null | undefined): string {

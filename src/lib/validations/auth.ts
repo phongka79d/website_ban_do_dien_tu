@@ -46,6 +46,9 @@ export const changePasswordSchema = z.object({
 }).refine((data) => data.newPassword === data.confirmPassword, {
   message: "Chưa trùng mật khẩu",
   path: ["confirmPassword"],
+}).refine((data) => data.newPassword !== data.oldPassword, {
+  message: "Mật khẩu mới không được trùng với mật khẩu cũ",
+  path: ["newPassword"],
 });
 
 export type LoginFormData = z.infer<typeof loginSchema>;

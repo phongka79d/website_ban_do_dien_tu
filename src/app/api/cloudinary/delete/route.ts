@@ -20,8 +20,8 @@ export async function POST(req: NextRequest) {
       .eq("id", user.id)
       .single();
 
-    if (profileError || profile?.role !== "admin") {
-      return NextResponse.json({ error: "Forbidden: Admin access required" }, { status: 403 });
+    if (profileError || (profile?.role !== "admin" && profile?.role !== "staff")) {
+      return NextResponse.json({ error: "Forbidden: Admin or Staff access required" }, { status: 403 });
     }
 
     // 3. Extract publicIds from body

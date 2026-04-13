@@ -16,7 +16,8 @@ import {
   Clock,
   Mail,
   Phone,
-  Hash
+  Hash,
+  Briefcase
 } from "lucide-react";
 import { Avatar } from "@/components/common/Avatar";
 import ConfirmationModal from "@/components/common/ConfirmationModal";
@@ -61,6 +62,7 @@ export default function UserManager({ currentAdminId }: UserManagerProps) {
   const [modalConfig, setModalConfig] = useState<{
     type: "block" | "unblock" | "role";
     user: Profile | null;
+    newRole?: "admin" | "staff" | "user";
   }>({ type: "block", user: null });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -80,7 +82,12 @@ export default function UserManager({ currentAdminId }: UserManagerProps) {
       return;
     }
 
-    setModalConfig({ type, user });
+    if (type === "role") {
+      setModalConfig({ type, user, newRole: user.role as any });
+    } else {
+      setModalConfig({ type, user });
+    }
+    
     setIsModalOpen(true);
   };
 
@@ -97,8 +104,8 @@ export default function UserManager({ currentAdminId }: UserManagerProps) {
         } else if (modalConfig.type === "unblock") {
           result = await UserService.updateStatus(supabase, modalConfig.user.id, true, currentAdminId);
         } else if (modalConfig.type === "role") {
-          const newRole = modalConfig.user.role === "admin" ? "user" : "admin";
-          result = await UserService.updateRole(supabase, modalConfig.user.id, newRole, currentAdminId);
+          const targetRole = modalConfig.newRole || modalConfig.user.role;
+          result = await UserService.updateRole(supabase, modalConfig.user.id, targetRole as any, currentAdminId);
         }
 
         if (result?.error) {
@@ -164,6 +171,14 @@ export default function UserManager({ currentAdminId }: UserManagerProps) {
             Quản trị viên
           </Button>
           <Button 
+            variant={roleFilter === "staff" ? "primary" : "light"} 
+            size="sm" 
+            onClick={() => { setRoleFilter("staff"); setPage(1); }}
+            className="rounded-xl px-6 shrink-0"
+          >
+            Nhân viên
+          </Button>
+          <Button 
             variant={roleFilter === "user" ? "primary" : "light"} 
             size="sm" 
             onClick={() => { setRoleFilter("user"); setPage(1); }}
@@ -222,10 +237,12 @@ export default function UserManager({ currentAdminId }: UserManagerProps) {
                 <div className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-colors shrink-0 ${
                   user.role === "admin" 
                     ? "bg-indigo-100/50 text-indigo-700 border-indigo-200" 
+                    : user.role === "staff"
+                    ? "bg-amber-100/50 text-amber-700 border-amber-200"
                     : "bg-slate-100 text-slate-500 border-slate-200"
                 }`}>
-                  {user.role === "admin" ? <ShieldCheck size={14} /> : <User size={14} />}
-                  {user.role === "admin" ? "Quản trị" : "Khách"}
+                  {user.role === "admin" ? <ShieldCheck size={14} /> : user.role === "staff" ? <Briefcase size={14} /> : <User size={14} />}
+                  {user.role === "admin" ? "Quản trị" : user.role === "staff" ? "Nhân viên" : "Khách"}
                 </div>
 
                 <div className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-colors shrink-0 ${
@@ -313,12 +330,27 @@ export default function UserManager({ currentAdminId }: UserManagerProps) {
         message={
           modalConfig.type === "block" ? `Bạn có chắc chắn muốn khóa tài khoản của "${modalConfig.user?.full_name}"? Người dùng này sẽ không thể đăng nhập vào hệ thống.` : 
           modalConfig.type === "unblock" ? `Phục hồi quyền truy cập cho "${modalConfig.user?.full_name}"?` : 
-          `Bạn muốn ${modalConfig.user?.role === "admin" ? "HẠ QUYỀN" : "NÂNG QUYỀN"} cho "${modalConfig.user?.full_name}"?`
+          `Hãy thay đổi chức danh, phân quyền tương ứng cho "${modalConfig.user?.full_name}":`
         } 
         confirmText="Xác nhận"
         type={modalConfig.type === "block" ? "danger" : "info"} 
         loading={isSubmitting} 
-      />
+      >
+        {modalConfig.type === "role" && (
+          <div className="flex flex-col gap-2 mt-4 text-left w-full">
+            <select
+              title="Chọn Quyền Hạn"
+              className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-700 font-bold outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all cursor-pointer appearance-none"
+              value={modalConfig.newRole || "user"}
+              onChange={(e) => setModalConfig({ ...modalConfig, newRole: e.target.value as any })}
+            >
+              <option value="admin">👑 Quản trị viên (Admin)</option>
+              <option value="staff">💼 Nhân viên (Staff)</option>
+              <option value="user">👤 Khách hàng (User)</option>
+            </select>
+          </div>
+        )}
+      </ConfirmationModal>
       
       <NotificationModal 
         isOpen={notification.isOpen} 

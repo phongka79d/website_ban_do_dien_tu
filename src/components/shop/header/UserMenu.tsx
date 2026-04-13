@@ -8,7 +8,7 @@ import { useTransition, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { User as SupabaseUser } from "@supabase/supabase-js";
 import { Avatar } from "@/components/common/Avatar";
-import { isAdmin, getUserName, getUserAvatar } from "@/utils/auth-helpers";
+import { isAdmin, isStaff, getUserName, getUserAvatar } from "@/utils/auth-helpers";
 import { signOut } from "@/app/auth/actions";
 import { useCartStore } from "@/store/useCartStore";
 import { useWishlistStore } from "@/store/useWishlistStore";
@@ -63,7 +63,7 @@ export default function UserMenu() {
 
       try {
         // Add a safety timeout to prevent infinite loading on Vercel
-        const timeoutPromise = new Promise((_, reject) => 
+        const timeoutPromise = new Promise((_, reject) =>
           setTimeout(() => reject(new Error("Auth fetch timeout")), 4000)
         );
 
@@ -78,8 +78,9 @@ export default function UserMenu() {
         if (user) {
           // 1. NGAY LẬP TỨC: Dùng Metadata để cập nhật Role & kích hoạt dữ liệu giỏ hàng/yêu thích
           const isUserAdmin = isAdmin(user);
+          const isUserStaff = isStaff(user);
           if (mounted) {
-            setUserProfile({ role: isUserAdmin ? "admin" : "user" });
+            setUserProfile({ role: isUserAdmin ? "admin" : isUserStaff ? "staff" : "user" });
             if (!pathname?.startsWith("/admin")) {
               fetchCart(user.id);
               fetchWishlist(user.id);
@@ -88,20 +89,20 @@ export default function UserMenu() {
 
           // 2. BACKGROUND SYNC: Lấy profile từ DB mà không chặn UI / chức năng khác
           (async () => {
-             try {
-                const { data: profile, error } = await supabase
-                  .from("profiles")
-                  .select("role")
-                  .eq("id", user.id)
-                  .single();
-                if (!error && profile && mounted) {
-                   setUserProfile(profile); // Cập nhật lại nếu DB khác Metadata
-                }
-             } catch (e: any) {
-                console.warn("Background profile sync failed", e);
-             }
+            try {
+              const { data: profile, error } = await supabase
+                .from("profiles")
+                .select("role")
+                .eq("id", user.id)
+                .single();
+              if (!error && profile && mounted) {
+                setUserProfile(profile); // Cập nhật lại nếu DB khác Metadata
+              }
+            } catch (e: any) {
+              console.warn("Background profile sync failed", e);
+            }
           })();
-            
+
         } else {
           if (mounted) setUserProfile(null);
         }
@@ -123,8 +124,9 @@ export default function UserMenu() {
       if (newUser) {
         // Hybrid Check Logic cho onAuthStateChange (Tương tự như trên)
         const isUserAdmin = isAdmin(newUser);
+        const isUserStaff = isStaff(newUser);
         if (mounted) {
-          setUserProfile({ role: isUserAdmin ? "admin" : "user" });
+          setUserProfile({ role: isUserAdmin ? "admin" : isUserStaff ? "staff" : "user" });
           if (!pathname?.startsWith("/admin")) {
             fetchCart(newUser.id);
             fetchWishlist(newUser.id);
@@ -133,18 +135,18 @@ export default function UserMenu() {
 
         // Background call
         (async () => {
-           try {
-              const { data: profile, error } = await supabase
-                .from("profiles")
-                .select("role")
-                .eq("id", newUser.id)
-                .single();
-              if (!error && profile && mounted) {
-                setUserProfile(profile);
-              }
-           } catch (err: any) {
-              console.warn("Background profile err:", err);
-           }
+          try {
+            const { data: profile, error } = await supabase
+              .from("profiles")
+              .select("role")
+              .eq("id", newUser.id)
+              .single();
+            if (!error && profile && mounted) {
+              setUserProfile(profile);
+            }
+          } catch (err: any) {
+            console.warn("Background profile err:", err);
+          }
         })();
       } else {
         if (mounted) {
@@ -243,13 +245,13 @@ export default function UserMenu() {
                   <Heart size={18} className="text-red-500" />
                   Yêu thích
                 </Link>
-                {userProfile?.role === "admin" && (
+                {(userProfile?.role === "admin" || userProfile?.role === "staff") && (
                   <Link
                     href="/admin"
                     className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-bold text-indigo-600 transition-colors hover:bg-indigo-50"
                   >
                     <LayoutDashboard size={18} />
-                    Dashboard Admin
+                    Dashboard
                   </Link>
                 )}
                 <div className="my-1 border-t border-slate-100" />

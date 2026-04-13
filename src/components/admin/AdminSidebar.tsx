@@ -16,9 +16,34 @@ import {
   Tags,
   Image as ImageIcon
 } from "lucide-react";
+import { createClient } from "@/utils/supabase/client";
 
 export function AdminSidebar() {
   const pathname = usePathname();
+  const [userRole, setUserRole] = React.useState<string | null>(null);
+  const [isReady, setIsReady] = React.useState(false);
+
+  React.useEffect(() => {
+    async function checkRole() {
+      const supabase = createClient();
+      if (!supabase) {
+        setIsReady(true);
+        return;
+      }
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
+          .single();
+        if (profile) setUserRole(profile.role);
+      }
+      setIsReady(true);
+    }
+    checkRole();
+  }, []);
 
   const menuItems = [
     {
@@ -79,7 +104,12 @@ export function AdminSidebar() {
         </div>
 
         <nav className="space-y-1.5">
-          {menuItems.map((item) => {
+          {isReady && menuItems.filter(item => {
+            if (userRole === "staff") {
+              return !["/admin/users", "/admin/banners", "/admin/settings"].includes(item.href);
+            }
+            return true;
+          }).map((item) => {
             const isActive = pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href));
 
             return (
