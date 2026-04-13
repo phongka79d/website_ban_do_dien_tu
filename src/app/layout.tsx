@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { Analytics } from "@vercel/analytics/react";
+import { Analytics } from "@vercel/analytics/next";
 import ServiceWorkerManager from "@/components/ServiceWorkerManager";
 import { Suspense } from "react";
 import Header from "@/components/Header";
