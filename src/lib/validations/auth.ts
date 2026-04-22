@@ -32,7 +32,7 @@ export const registerSchema = z.object({
 
 export const forgotPasswordSchema = z.object({
   email: trimString
-    .min(1, "Email không được để trống")
+    .min(1, "Vui lòng nhập đầy đủ thông tin")
     .email("Email không đúng định dạng"),
 });
 
@@ -53,14 +53,17 @@ export const changePasswordSchema = z.object({
 
 export const resetPasswordSchema = z.object({
   email: trimString
-    .min(1, "Email không được để trống")
+    .min(1, "Vui lòng nhập đầy đủ thông tin")
     .email("Email không đúng định dạng"),
-  otp: z.string().min(1, "Vui lòng nhập mã OTP"),
+  otp: z.string().min(1, "Vui lòng nhập đầy đủ thông tin"),
   password: z.string()
-    .min(6, "MẬT KHẨU NHẬP K ĐỦ")
-    .regex(/[A-Z]/, "Cần ít nhất 1 chữ hoa")
-    .regex(/[^A-Za-z0-9]/, "Cần ít nhất 1 kí đặc biệt"),
-  confirmPassword: z.string().min(1, "Vui lòng nhập lại mật khẩu"),
+    .min(1, "Vui lòng nhập đầy đủ thông tin")
+    .min(6, "Mật khẩu phải có ít nhất 6 ký tự")
+    .regex(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9])/,
+      "Mật khẩu phải bao gồm chữ thường, chữ hoa, số và ký tự đặc biệt"
+    ),
+  confirmPassword: z.string().min(1, "Vui lòng nhập đầy đủ thông tin"),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Mật khẩu nhập lại không khớp",
   path: ["confirmPassword"],
