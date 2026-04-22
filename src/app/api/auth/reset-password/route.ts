@@ -6,7 +6,7 @@ import { resetPasswordSchema } from "@/lib/validations/auth";
 /**
  * API Route: Reset Password (Verify OTP and Update Password)
  * Method: POST
- * Body: { email: string, otp: string, password: string }
+ * Body: { email: string, otp: string, password: string, confirmPassword: string }
  */
 export async function POST(request: Request) {
   try {

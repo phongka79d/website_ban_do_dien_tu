@@ -60,6 +60,10 @@ export const resetPasswordSchema = z.object({
     .min(6, "MẬT KHẨU NHẬP K ĐỦ")
     .regex(/[A-Z]/, "Cần ít nhất 1 chữ hoa")
     .regex(/[^A-Za-z0-9]/, "Cần ít nhất 1 kí đặc biệt"),
+  confirmPassword: z.string().min(1, "Vui lòng nhập lại mật khẩu"),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Mật khẩu nhập lại không khớp",
+  path: ["confirmPassword"],
 });
 
 export type LoginFormData = z.infer<typeof loginSchema>;
