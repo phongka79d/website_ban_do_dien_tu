@@ -249,3 +249,36 @@ export async function resendRecoveryOtp(email: string) {
   if (error) return { error: getAuthMessage(error.message) };
   return { success: true };
 }
+
+export async function verifyRecoveryOtp(email: string, otp: string) {
+  const supabase = await createClient();
+  if (!supabase) return { error: getAuthMessage("conn-failed") };
+
+  const { error } = await supabase.auth.verifyOtp({
+    email,
+    token: otp,
+    type: "recovery",
+  });
+
+  if (error) return { error: "Mã OTP không hợp lệ hoặc đã hết hạn." };
+
+  return { success: true };
+}
+
+export async function updatePassword(password: string) {
+  const supabase = await createClient();
+  if (!supabase) return { error: getAuthMessage("conn-failed") };
+
+  const { error } = await supabase.auth.updateUser({
+    password: password,
+  });
+
+  if (error) {
+    // Nếu lỗi, đăng xuất để đảm bảo an toàn
+    await supabase.auth.signOut();
+    return { error: getAuthMessage(error.message) };
+  }
+
+  revalidatePath("/", "layout");
+  return { success: true };
+}

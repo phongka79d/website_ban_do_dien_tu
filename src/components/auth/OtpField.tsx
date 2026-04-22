@@ -20,6 +20,8 @@ interface OtpFieldProps {
   label?: string;
   /** Màu accent cho focus ring */
   accentColor?: "primary" | "secondary";
+  /** Thông báo lỗi */
+  error?: string;
 }
 
 /**
@@ -34,6 +36,7 @@ export default function OtpField({
   initialCountdown = 0,
   label = "Mã OTP 6 số",
   accentColor = "primary",
+  error,
 }: OtpFieldProps) {
   const [countdown, setCountdown] = useState(initialCountdown);
   const [resendLoading, setResendLoading] = useState(false);
@@ -98,8 +101,17 @@ export default function OtpField({
         placeholder="000000"
         autoComplete="one-time-code"
         inputMode="numeric"
-        className={`w-full tracking-[1em] text-center rounded-2xl border border-slate-200 bg-white/50 py-4 text-lg font-black outline-none transition-all focus:ring-4 ${focusCls}`}
+        className={`w-full tracking-[1em] text-center rounded-2xl border ${
+          error ? "border-red-500 bg-red-50/30" : "border-slate-200 bg-white/50"
+        } py-4 text-lg font-black outline-none transition-all focus:ring-4 ${focusCls}`}
       />
+
+      {/* Error message */}
+      {error && (
+        <p className="mt-1 px-1 text-[10px] font-bold text-red-500 animate-in fade-in slide-in-from-top-1">
+          {error}
+        </p>
+      )}
 
       {/* Success message nội bộ */}
       {successMsg && (

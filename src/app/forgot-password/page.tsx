@@ -3,22 +3,80 @@
 import React, { useState, useTransition, useEffect } from "react";
 import Link from "next/link";
 import { Mail, Lock, Eye, EyeOff, ArrowRight, ShieldCheck, CheckCircle2 } from "lucide-react";
-import { requestPasswordReset, resetPasswordWithOtp, resendRecoveryOtp } from "@/app/auth/actions";
+import { requestPasswordReset, updatePassword, resendRecoveryOtp, verifyRecoveryOtp } from "@/app/auth/actions";
 import AuthCard from "@/components/auth/AuthCard";
 import AuthInput from "@/components/auth/AuthInput";
 import OtpField from "@/components/auth/OtpField";
 import { Button, buttonVariants } from "@/components/ui/Button";
+import { useForm, useWatch } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { 
+  forgotPasswordSchema, 
+  resetPasswordSchema, 
+  ForgotPasswordFormData, 
+  ResetPasswordFormData 
+} from "@/lib/validations/auth";
 
 export default function ForgotPasswordPage() {
   const [step, setStep] = useState(1);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [isOtpVerified, setIsOtpVerified] = useState(false);
 
   const [email, setEmail] = useState("");
-  const [otp, setOtp] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Form Step 1: Email
+  const step1Form = useForm<ForgotPasswordFormData>({
+    resolver: zodResolver(forgotPasswordSchema),
+  });
+
+  // Form Step 2: OTP & Reset
+  const step2Form = useForm<ResetPasswordFormData>({
+    resolver: zodResolver(resetPasswordSchema),
+    defaultValues: {
+      email: "",
+      otp: "",
+      password: "",
+      confirmPassword: "",
+    },
+  });
+
+  // Sử dụng useWatch thay cho watch() để tối ưu hiệu năng và tránh cảnh báo React Compiler
+  const watchedOtp = useWatch({
+    control: step2Form.control,
+    name: "otp",
+    defaultValue: "",
+  });
+
+  // Đồng bộ email vào form bước 2 khi step 1 hoàn thành
+  useEffect(() => {
+    if (email) {
+      step2Form.setValue("email", email);
+    }
+  }, [email, step2Form]);
+
+  // Tự động xác thực OTP khi đủ 6 ký tự
+  useEffect(() => {
+    if (watchedOtp.length === 6 && !isOtpVerified) {
+      const verify = async () => {
+        setError(null);
+        startTransition(async () => {
+          const result = await verifyRecoveryOtp(email, watchedOtp);
+          if (result?.error) {
+            setError(result.error);
+            step2Form.setError("otp", { message: result.error });
+          } else {
+            setIsOtpVerified(true);
+            setMessage("Xác thực thành công! Vui lòng nhập mật khẩu mới.");
+          }
+        });
+      };
+      verify();
+    }
+  }, [watchedOtp, isOtpVerified, email, step2Form]);
 
   useEffect(() => {
     if (step === 3) {
@@ -27,12 +85,12 @@ export default function ForgotPasswordPage() {
     }
   }, [step]);
 
-  async function handleStep1(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  const onStep1Submit = async (data: ForgotPasswordFormData) => {
     setError(null);
-    const formData = new FormData(event.currentTarget);
-    const emailValue = formData.get("email") as string;
-    setEmail(emailValue);
+    setEmail(data.email);
+
+    const formData = new FormData();
+    formData.append("email", data.email);
 
     startTransition(async () => {
       const result = await requestPasswordReset(formData);
@@ -43,29 +101,21 @@ export default function ForgotPasswordPage() {
         setMessage("Mã xác thực đã được gửi đến Email của bạn.");
       }
     });
-  }
+  };
 
-  async function handleStep2(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  const onStep2Submit = async (data: ResetPasswordFormData) => {
+    if (!isOtpVerified) return;
     setError(null);
-    const formData = new FormData(event.currentTarget);
-    const pass = formData.get("password") as string;
-    const confirm = formData.get("confirmPassword") as string;
-
-    if (pass !== confirm) {
-      setError("Mật khẩu xác nhận không khớp.");
-      return;
-    }
 
     startTransition(async () => {
-      const result = await resetPasswordWithOtp(formData);
+      const result = await updatePassword(data.password);
       if (result?.error) {
         setError(result.error);
       } else {
         setStep(3);
       }
     });
-  }
+  };
 
   async function handleResendOtp() {
     setError(null);
@@ -90,7 +140,7 @@ export default function ForgotPasswordPage() {
             </p>
           </div>
 
-          <form onSubmit={handleStep1} className="space-y-5">
+          <form onSubmit={step1Form.handleSubmit(onStep1Submit)} className="space-y-5">
             {error && (
               <div className="rounded-xl bg-red-50 p-4 text-xs font-medium text-red-600 border border-red-100 italic">
                 {error}
@@ -99,9 +149,9 @@ export default function ForgotPasswordPage() {
             <AuthInput
               label="Email của bạn"
               icon={<Mail size={18} />}
-              name="email"
+              {...step1Form.register("email")}
+              error={step1Form.formState.errors.email?.message}
               type="email"
-              required
               placeholder="example@gmail.com"
             />
             <Button
@@ -131,7 +181,7 @@ export default function ForgotPasswordPage() {
             </p>
           </div>
 
-          <form onSubmit={handleStep2} className="space-y-5">
+          <form onSubmit={step2Form.handleSubmit(onStep2Submit)} className="space-y-5">
             {error && (
               <div className="rounded-xl bg-red-50 p-4 text-xs font-medium text-red-600 border border-red-100 italic">
                 {error}
@@ -143,49 +193,63 @@ export default function ForgotPasswordPage() {
               </div>
             )}
 
-            <input type="hidden" name="email" value={email} />
+            {!isOtpVerified ? (
+              <OtpField 
+                value={watchedOtp} 
+                onChange={(val) => {
+                  step2Form.setValue("otp", val, { shouldValidate: true });
+                }} 
+                onResend={handleResendOtp} 
+                initialCountdown={60}
+                error={step2Form.formState.errors.otp?.message}
+              />
+            ) : (
+              <div className="flex items-center justify-center gap-2 rounded-2xl bg-green-50 py-4 border border-green-100 animate-in zoom-in-95 duration-300">
+                <CheckCircle2 className="text-green-600" size={20} />
+                <span className="text-sm font-bold text-green-700">Mã xác thực đã được chấp nhận</span>
+              </div>
+            )}
 
-            <OtpField value={otp} onChange={setOtp} onResend={handleResendOtp} initialCountdown={60} />
+            {isOtpVerified && (
+              <div className="space-y-5 animate-in slide-in-from-top-4 duration-500">
+                <AuthInput
+                  label="Mật khẩu mới"
+                  icon={<Lock size={18} />}
+                  rightSlot={
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="hover:text-primary transition-colors">
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  }
+                  {...step2Form.register("password")}
+                  error={step2Form.formState.errors.password?.message}
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                />
+                <AuthInput
+                  label="Xác nhận mật khẩu"
+                  icon={<Lock size={18} />}
+                  rightSlot={
+                    <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="hover:text-primary transition-colors">
+                      {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  }
+                  {...step2Form.register("confirmPassword")}
+                  error={step2Form.formState.errors.confirmPassword?.message}
+                  type={showConfirmPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                />
 
-            <input type="hidden" name="otp" value={otp} />
-
-            <AuthInput
-              label="Mật khẩu mới"
-              icon={<Lock size={18} />}
-              rightSlot={
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="hover:text-primary transition-colors">
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              }
-              name="password"
-              type={showPassword ? "text" : "password"}
-              required
-              placeholder="••••••••"
-            />
-            <AuthInput
-              label="Xác nhận mật khẩu"
-              icon={<Lock size={18} />}
-              rightSlot={
-                <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="hover:text-primary transition-colors">
-                  {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              }
-              name="confirmPassword"
-              type={showConfirmPassword ? "text" : "password"}
-              required
-              placeholder="••••••••"
-            />
-
-            <Button
-              type="submit"
-              variant="secondary"
-              isLoading={isPending}
-              disabled={otp.length < 6}
-              fullWidth
-              size="lg"
-            >
-              Cập nhật mật khẩu mới
-            </Button>
+                <Button
+                  type="submit"
+                  variant="secondary"
+                  isLoading={isPending}
+                  fullWidth
+                  size="lg"
+                >
+                  Cập nhật mật khẩu mới
+                </Button>
+              </div>
+            )}
 
             <Button
               type="button"

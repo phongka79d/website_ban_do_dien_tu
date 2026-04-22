@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { signIn } from "@/app/auth/actions";
 import { Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
 import AuthCard from "@/components/auth/AuthCard";
@@ -18,6 +18,7 @@ export default function LoginPage() {
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const searchParams = useSearchParams();
+  const router = useRouter();
   const errorParam = searchParams.get("error");
 
   const {
@@ -53,7 +54,9 @@ export default function LoginPage() {
       // Bảo mật: Chỉ cho phép chuyển hướng nếu bắt đầu bằng '/' và không phải URL tuyệt đối (tránh Open Redirect)
       const isValidRedirect = returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//");
       
-      window.location.href = isValidRedirect ? returnTo : "/";
+      const target = isValidRedirect ? returnTo : "/";
+      router.push(target);
+      router.refresh();
     }
   }
 
