@@ -1,4 +1,4 @@
-import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { isAdmin, isStaff } from "@/utils/auth-helpers";
 
@@ -18,7 +18,7 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
+          cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           );
           response = NextResponse.next({
@@ -62,7 +62,7 @@ export async function middleware(request: NextRequest) {
   if (request.nextUrl.pathname.startsWith("/admin")) {
     const isActuallyAdmin = userProfile?.role === "admin" || (user && isAdmin(user));
     const isActuallyStaff = userProfile?.role === "staff" || (user && isStaff(user));
-    
+
     // Nếu không phải Admin và không phải Staff -> văng ra Login
     if (!user || (!isActuallyAdmin && !isActuallyStaff)) {
       const loginUrl = new URL("/login", request.url);
