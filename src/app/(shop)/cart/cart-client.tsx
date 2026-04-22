@@ -40,6 +40,7 @@ export default function CartClient() {
     setSelectedIds(newSelected);
   };
 
+  // Chọn tất cả hoặc bỏ chọn tất cả
   const toggleAll = () => {
     if (isAllSelected) {
       setSelectedIds(new Set());
