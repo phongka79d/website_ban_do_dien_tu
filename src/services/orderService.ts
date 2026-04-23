@@ -1,5 +1,5 @@
-import { SupabaseClient } from "@supabase/supabase-js";
-import { Order, OrderItem, OrderWithItems, CartItem } from "@/types/database";
+import { SupabaseClient, PostgrestError } from "@supabase/supabase-js";
+import { Order, OrderWithItems, CartItem } from "@/types/database";
 
 export class OrderService {
   /**
@@ -15,10 +15,20 @@ export class OrderService {
       phoneNumber: string;
       paymentMethod: string;
     }
-  ): Promise<{ data: Order | null; error: any }> {
+  ): Promise<{ data: Order | null; error: Error | PostgrestError | null }> {
     const { userId, items, totalAmount, shippingAddress, phoneNumber, paymentMethod } = params;
-
     try {
+      // Server-side validation
+      if (!shippingAddress || shippingAddress.length < 12) {
+        throw new Error("Vui lòng nhập địa chỉ giao hàng rõ ràng (ít nhất 12 ký tự)");
+      }
+      if (shippingAddress.length > 300) {
+        throw new Error("Địa chỉ không được quá 300 ký tự.");
+      }
+      if (!phoneNumber || !/^0\d{8,10}$/.test(phoneNumber)) {
+        throw new Error("Số điện thoại không hợp lệ (Phải từ 9-11 chữ số)");
+      }
+
       // Gọi hàm RPC để thực hiện toàn bộ quy trình đặt hàng trong một Transaction duy nhất
       const { data, error: rpcError } = await supabase.rpc("create_order_v1", {
         p_user_id: userId,
@@ -26,7 +36,7 @@ export class OrderService {
         p_shipping_address: shippingAddress,
         p_phone_number: phoneNumber,
         p_payment_method: paymentMethod,
-        p_items: items.map((item) => ({
+        p_items: items.map((item: CartItem) => ({
           product_id: item.product_id,
           quantity: item.quantity,
           price_at_purchase: item.products?.price || 0,
@@ -51,9 +61,9 @@ export class OrderService {
       }
 
       return { data: order as Order, error: null };
-    } catch (error: any) {
-      console.error("Order creation failed (Atomic RPC):", error.message || error);
-      return { data: null, error };
+    } catch (error: unknown) {
+      console.error("Order creation failed (Atomic RPC):", (error as Error).message || error);
+      return { data: null, error: error as Error };
     }
   }
 
@@ -104,7 +114,7 @@ export class OrderService {
       return null;
     }
 
-    let resultData = data as OrderWithItems;
+    const resultData = data as OrderWithItems;
     
     if (resultData && resultData.user_id) {
        const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', resultData.user_id).single();
@@ -142,7 +152,7 @@ export class OrderService {
         throw error;
       }
 
-      let resultData = data as OrderWithItems;
+      const resultData = data as OrderWithItems;
       if (resultData && resultData.user_id) {
          const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', resultData.user_id).single();
          if (profile) {
@@ -150,9 +160,9 @@ export class OrderService {
          }
       }
       return { data: resultData, error: null };
-    } catch (error: any) {
-      console.error("Error in fetchOrderByPublicInfo:", error.message);
-      return { data: null, error: error.message };
+    } catch (error: unknown) {
+      console.error("Error in fetchOrderByPublicInfo:", (error as Error).message);
+      return { data: null, error: (error as Error).message };
     }
   }
 
@@ -185,9 +195,9 @@ export class OrderService {
       if (updateError) throw updateError;
 
       return { success: true, error: null };
-    } catch (error: any) {
-      console.error("Error in cancelOrder:", error.message);
-      return { success: false, error: error.message };
+    } catch (error: unknown) {
+      console.error("Error in cancelOrder:", (error as Error).message);
+      return { success: false, error: (error as Error).message };
     }
   }
 
@@ -195,7 +205,7 @@ export class OrderService {
     supabase: SupabaseClient,
     orderId: string,
     status: string
-  ): Promise<{ success: boolean; error: any }> {
+  ): Promise<{ success: boolean; error: Error | PostgrestError | null }> {
     try {
       const { data, error } = await supabase
         .from("orders")
@@ -210,9 +220,9 @@ export class OrderService {
       }
 
       return { success: true, error: null };
-    } catch (error: any) {
-      console.error("Error updating order status:", error.message || error);
-      return { success: false, error };
+    } catch (error: unknown) {
+      console.error("Error updating order status:", (error as Error).message || error);
+      return { success: false, error: error as Error };
     }
   }
 

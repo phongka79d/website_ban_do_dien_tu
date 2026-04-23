@@ -12,6 +12,7 @@
 !.yarn/releases
 !.yarn/versions
 /.agents
+.agent/
 /.antigravity
 
 # testing

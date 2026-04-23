@@ -33,7 +33,7 @@ export const registerSchema = z.object({
 export const forgotPasswordSchema = z.object({
   email: trimString
     .min(1, "Vui lòng nhập đầy đủ thông tin")
-    .email("Email không đúng định dạng"),
+    .email("Email nhập chưa chính xác"),
 });
 
 export const changePasswordSchema = z.object({
@@ -54,14 +54,14 @@ export const changePasswordSchema = z.object({
 export const resetPasswordSchema = z.object({
   email: trimString
     .min(1, "Vui lòng nhập đầy đủ thông tin")
-    .email("Email không đúng định dạng"),
+    .email("Email nhập chưa chính xác"),
   otp: z.string().min(1, "Vui lòng nhập đầy đủ thông tin"),
   password: z.string()
     .min(1, "Vui lòng nhập đầy đủ thông tin")
-    .min(6, "Mật khẩu phải có ít nhất 6 ký tự")
+    .min(6, "Mật khẩu không hợp lệ")
     .regex(
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9])/,
-      "Mật khẩu phải bao gồm chữ thường, chữ hoa, số và ký tự đặc biệt"
+      "Mật khẩu không hợp lệ"
     ),
   confirmPassword: z.string().min(1, "Vui lòng nhập đầy đủ thông tin"),
 }).refine((data) => data.password === data.confirmPassword, {

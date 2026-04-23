@@ -10,8 +10,8 @@ const AUTH_MESSAGES: Record<string, string> = {
   "OTP expired": "Mã xác thực đã hết hạn. Vui lòng gửi lại mã mới.",
   "Invalid OTP": "Mã xác thực không chính xác. Vui lòng thử lại.",
   "Too many requests": "Bạn đã thực hiện quá nhiều yêu cầu. Vui lòng thử lại sau ít phút.",
-  "Password should contain at least one character": "Mật khẩu phải bao gồm chữ thường, chữ hoa, số và ký tự đặc biệt.",
-  "Password should be at least": "Mật khẩu quá yếu! Yêu cầu tối thiểu 8 ký tự, bao gồm chữ cái in hoa, chữ thường, số và ký tự đặc biệt.",
+  "Password should contain at least one character": "Mật khẩu không hợp lệ",
+  "Password should be at least": "Mật khẩu không hợp lệ",
   "For security purposes, you can only request this after": "Vui lòng đợi 60 giây trước khi yêu cầu gửi lại mã OTP khác",
   "email rate limit exceeded": "Hệ thống tạm thời hết hạn mức gửi Email (Quá tải). Vui lòng thử lại sau khoảng 1h nữa.",
   "Error sending recovery email": "Máy chủ không thể gửi Email OTP. Lỗi cấu hình Máy chủ hoặc Tên người gửi.",
@@ -30,15 +30,23 @@ const AUTH_MESSAGES: Record<string, string> = {
  * @param error Error message or custom code
  * @returns Translated message
  */
-export function getAuthMessage(error: any): string {
+export function getAuthMessage(error: unknown): string {
   if (!error) return AUTH_MESSAGES["unknown-error"];
 
   // Chống crash nếu error là object, bóc tách message chuỗi
-  const errorMessage = typeof error === 'string' ? error : (error.message || JSON.stringify(error));
+  let errorMessage = "";
+  
+  if (typeof error === 'string') {
+    errorMessage = error;
+  } else if (error && typeof error === 'object' && 'message' in error) {
+    errorMessage = String((error as { message: unknown }).message);
+  } else {
+    errorMessage = JSON.stringify(error);
+  }
 
   console.log("Auth Error Debug:", errorMessage);
 
-  if (errorMessage === "{}") return AUTH_MESSAGES["unknown-error"];
+  if (errorMessage === "{}" || !errorMessage) return AUTH_MESSAGES["unknown-error"];
 
   const lowerError = errorMessage.toLowerCase();
 

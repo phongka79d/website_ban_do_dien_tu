@@ -201,7 +201,7 @@ export async function requestPasswordReset(formData: FormData) {
 
   // Kiểm tra Email tồn tại (Optionally)
   const { data: emailExists } = await supabase.rpc("check_email_exists", { email_to_check: email });
-  if (!emailExists) return { error: "Email này chưa được đăng ký trong hệ thống." };
+  if (!emailExists) return { error: "Email nhập chưa chính xác" };
 
   const { error } = await supabase.auth.resetPasswordForEmail(email);
   if (error) return { error: getAuthMessage(error.message) };

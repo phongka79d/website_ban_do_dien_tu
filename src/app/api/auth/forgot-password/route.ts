@@ -42,7 +42,7 @@ export async function POST(request: Request) {
 
     if (!emailExists) {
       return NextResponse.json(
-        { error: "Email này chưa được đăng ký trong hệ thống." },
+        { error: "Email nhập chưa chính xác" },
         { status: 404 }
       );
     }

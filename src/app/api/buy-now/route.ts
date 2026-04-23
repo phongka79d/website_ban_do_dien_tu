@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { OrderService } from "@/services/orderService";
 import { NextResponse } from "next/server";
+import { CartItem, Product } from "@/types/database";
 
 /**
  * API Route: Mua ngay (Buy Now - Bỏ qua giỏ hàng)
@@ -30,8 +31,15 @@ export async function POST(request: Request) {
     const userId = user.id;
 
     // 2. Lấy dữ liệu từ Request Body
-    const body = await request.json();
-    let { productId, quantity = 1, shippingAddress, phoneNumber, paymentMethod } = body;
+    const body: {
+      productId: string;
+      quantity?: number;
+      shippingAddress: string;
+      phoneNumber: string;
+      paymentMethod: string;
+    } = await request.json();
+    
+    const { productId, quantity: rawQuantity = 1, shippingAddress, phoneNumber, paymentMethod } = body;
 
     // Validation cơ bản
     if (!productId || !shippingAddress || !phoneNumber || !paymentMethod) {
@@ -42,9 +50,16 @@ export async function POST(request: Request) {
     }
 
     // Kiểm tra tính hợp lệ của địa chỉ giao hàng
-    if (typeof shippingAddress !== "string" || shippingAddress.trim().length <= 12) {
+    if (typeof shippingAddress !== "string" || shippingAddress.trim().length < 12) {
       return NextResponse.json(
         { success: false, error: "Vui lòng nhập địa chỉ giao hàng rõ ràng (ít nhất 12 ký tự)" },
+        { status: 400 }
+      );
+    }
+
+    if (shippingAddress.trim().length > 300) {
+      return NextResponse.json(
+        { success: false, error: "Địa chỉ quá dài, vui lòng rút gọn lại (tối đa 300 ký tự)" },
         { status: 400 }
       );
     }
@@ -59,7 +74,7 @@ export async function POST(request: Request) {
     }
 
     // Kiểm tra số lượng
-    quantity = Number(quantity);
+    const quantity = Number(rawQuantity);
     if (!Number.isInteger(quantity) || quantity <= 0) {
       return NextResponse.json(
         { success: false, error: "Số lượng sản phẩm không hợp lệ" },
@@ -67,8 +82,8 @@ export async function POST(request: Request) {
       );
     }
 
-    // Kiểm tra định dạng số điện thoại (9-11 chữ số)
-    const phoneRegex = /^\d{9,11}$/;
+    // Kiểm tra định dạng số điện thoại (9-11 chữ số, bắt đầu bằng 0)
+    const phoneRegex = /^0\d{8,10}$/;
     if (!phoneRegex.test(phoneNumber)) {
       return NextResponse.json(
         { success: false, error: "Số điện thoại không hợp lệ (Phải từ 9-11 chữ số)" },
@@ -105,10 +120,14 @@ export async function POST(request: Request) {
     const totalAmount = product.price * quantity;
 
     // 6. Giả lập cấu trúc CartItem để tái sử dụng OrderService
-    const mockItems: any[] = [{
+    const mockItems: CartItem[] = [{
+      id: "", // Không quan trọng vì RPC sẽ tạo OrderItem mới
+      cart_id: "", 
       product_id: productId,
       quantity: quantity,
-      products: product
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      products: product as Product
     }];
 
     // 7. Khởi tạo quy trình Tạo đơn hàng Mua ngay (Atomic RPC)
@@ -142,12 +161,12 @@ export async function POST(request: Request) {
       }
     }, { status: 201 });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("API Error [/api/buy-now]:", error);
     return NextResponse.json(
       {
         success: false,
-        error: error.message || "Lỗi hệ thống khi thanh toán mua ngay"
+        error: (error as Error).message || "Lỗi hệ thống khi thanh toán mua ngay"
       },
       { status: 500 }
     );
