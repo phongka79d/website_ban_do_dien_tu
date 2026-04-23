@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useTransition } from "react";
 import { Loader2, Save, User, Phone, Mail, Link as LinkIcon, Info } from "lucide-react";
+import { User as SupabaseUser } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/client";
 import { updateProfileInfo } from "@/app/auth/profile-actions";
 import { ImageUpload } from "@/components/admin/ImageUpload";
@@ -35,16 +36,31 @@ export default function ProfileGeneralPage() {
           setTimeout(() => reject(new Error("Auth check timeout")), 5000)
         );
         
-        const { data: { user } } = await Promise.race([
+        const { data: { user } } = (await Promise.race([
           supabase.auth.getUser(),
           timeoutPromise
-        ]) as any;
+        ])) as { data: { user: SupabaseUser | null }; error: any };
 
         if (user && mounted) {
           setEmail(user.email || "");
-          setFullName(getUserName(user));
-          setPhone(user.user_metadata?.phone || "");
-          setAvatarUrl(getUserAvatar(user) || "");
+          
+          // Ưu tiên lấy từ bảng profiles (Database)
+          const { data: dbProfile } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", user.id)
+            .single();
+
+          if (dbProfile) {
+            setFullName(dbProfile.full_name || "");
+            setPhone(dbProfile.phone || "");
+            setAvatarUrl(dbProfile.avatar_url || "");
+          } else {
+            // Fallback sang Auth Metadata nếu DB chưa có
+            setFullName(getUserName(user));
+            setPhone(user.user_metadata?.phone || "");
+            setAvatarUrl(getUserAvatar(user) || "");
+          }
         }
       } catch (err) {
         console.warn("Profile Load Warning:", err);

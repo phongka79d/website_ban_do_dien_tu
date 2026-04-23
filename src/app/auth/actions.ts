@@ -92,7 +92,7 @@ export async function signIn(formData: FormData) {
   const user = data?.user;
   const { data: profile, error: profileFetchError } = await supabase
     .from("profiles")
-    .select("is_active, role, avatar_url")
+    .select("is_active, role, avatar_url, full_name, phone")
     .eq("id", user?.id)
     .single();
 
@@ -101,14 +101,18 @@ export async function signIn(formData: FormData) {
     console.error("Profile fetch error:", profileFetchError);
   }
 
-  // 3. Nếu thiếu Profile hoặc Profile tồn tại nhưng thiếu Avatar -> Tiến hành cập nhật/khôi phục
-  if ((!profile || (profile && !profile.avatar_url)) && user) {
+  // 3. Nếu thiếu Profile hoặc dữ liệu bị lệch (Tên/Avatar) -> Tiến hành cập nhật/khôi phục
+  const isProfileMissing = !profile;
+  const isNameMismatched = profile && user.user_metadata?.full_name && profile.full_name !== user.user_metadata.full_name;
+  const isAvatarMissing = profile && !profile.avatar_url && user.user_metadata?.avatar_url;
+
+  if ((isProfileMissing || isNameMismatched || isAvatarMissing) && user) {
     console.log("Profile sync triggered for user:", user.id);
 
-    // Lấy thông tin từ Metadata (đặc biệt là avatar_url từ Google/Facebook)
-    const fullName = user.user_metadata?.full_name || user.email?.split('@')[0] || "Người dùng";
-    const phone = user.user_metadata?.phone || "";
-    const avatarUrl = user.user_metadata?.avatar_url || user.user_metadata?.picture || "";
+    // Ưu tiên: 1. Metadata mới, 2. Profile hiện tại, 3. Email prefix, 4. Mặc định
+    const fullName = user.user_metadata?.full_name || profile?.full_name || user.email?.split('@')[0] || "Người dùng";
+    const phone = user.user_metadata?.phone || profile?.phone || "";
+    const avatarUrl = user.user_metadata?.avatar_url || user.user_metadata?.picture || profile?.avatar_url || "";
 
     const { error: recoveryError } = await supabase
       .from("profiles")
@@ -247,38 +251,5 @@ export async function resendRecoveryOtp(email: string) {
   const { error } = await supabase.auth.resetPasswordForEmail(email);
 
   if (error) return { error: getAuthMessage(error.message) };
-  return { success: true };
-}
-
-export async function verifyRecoveryOtp(email: string, otp: string) {
-  const supabase = await createClient();
-  if (!supabase) return { error: getAuthMessage("conn-failed") };
-
-  const { error } = await supabase.auth.verifyOtp({
-    email,
-    token: otp,
-    type: "recovery",
-  });
-
-  if (error) return { error: "Mã OTP không hợp lệ hoặc đã hết hạn." };
-
-  return { success: true };
-}
-
-export async function updatePassword(password: string) {
-  const supabase = await createClient();
-  if (!supabase) return { error: getAuthMessage("conn-failed") };
-
-  const { error } = await supabase.auth.updateUser({
-    password: password,
-  });
-
-  if (error) {
-    // Nếu lỗi, đăng xuất để đảm bảo an toàn
-    await supabase.auth.signOut();
-    return { error: getAuthMessage(error.message) };
-  }
-
-  revalidatePath("/", "layout");
   return { success: true };
 }

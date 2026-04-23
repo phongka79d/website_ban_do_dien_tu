@@ -3,11 +3,15 @@ import UserManager from "@/components/admin/UserManager";
 import { Metadata } from "next";
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
+import { User } from "@supabase/supabase-js";
 
 export const metadata: Metadata = {
   title: "Quản lý người dùng | Admin Portal",
   description: "Trang quản trị danh sách người dùng và phân quyền.",
 };
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export default async function AdminUsersPage() {
   const supabase = await createClient();
@@ -23,9 +27,9 @@ export default async function AdminUsersPage() {
     const response = await Promise.race([
       supabase.auth.getUser(),
       timeoutPromise
-    ]) as any;
-    user = response.data?.user;
-  } catch (error) {
+    ]) as { data: { user: User | null } }; 
+    user = response?.data?.user;
+  } catch (error: unknown) {
     console.error("AdminUsersPage Auth Timeout/Error:", error);
   }
 

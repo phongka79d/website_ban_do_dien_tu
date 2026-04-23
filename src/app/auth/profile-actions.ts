@@ -38,30 +38,37 @@ export async function updateProfileInfo(formData: FormData) {
     console.error("Cleanup failed but proceeding with update:", err);
   }
 
-  // 3. Cập nhật vào Auth
+  // 3. Cập nhật vào Auth Metadata (Đây là nguồn cho Trigger đồng bộ)
   const { error: authError } = await supabase.auth.updateUser({
-    data: { full_name, phone, avatar_url }
+    data: { 
+      full_name: full_name, // Đảm bảo key đúng với trigger
+      phone: phone,
+      avatar_url: avatar_url 
+    }
   });
 
   if (authError) return { error: getAuthMessage(authError.message) };
 
-  // 4. Chắp vá đồng bộ sang Public Profiles (Giữ tính nhất quán DB)
+  // 4. Đồng bộ trực tiếp sang Public Profiles (Dự phòng cho Trigger)
   const { error: profileError } = await supabase
     .from("profiles")
     .update({
-      full_name,
-      phone,
+      full_name: full_name,
+      phone: phone,
       avatar_url: avatar_url || null,
       updated_at: new Date().toISOString()
     })
     .eq("id", user.id);
 
   if (profileError) {
-    console.error("Profile sync error:", profileError);
-    // Vẫn trả về success vì Auth đã lưu thành công
+    console.error("Profile table sync error:", profileError);
+    // Lưu ý: Metadata đã đổi, nếu DB lỗi thì trigger sẽ cố gắng chạy lại sau
+    return { error: "Cập nhật metadata thành công nhưng lỗi đồng bộ bảng profiles. Vui lòng tải lại trang." };
   }
 
   revalidatePath("/", "layout");
+  revalidatePath("/admin/users", "page");
+  revalidatePath("/admin", "layout");
   return { success: true };
 }
 

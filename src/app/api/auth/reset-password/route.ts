@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    
+
     // Validate request body
     const validation = resetPasswordSchema.safeParse(body);
     if (!validation.success) {
@@ -28,7 +28,7 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-    
+
     const { email, otp, password } = validation.data;
 
     // 1. Xác thực mã OTP (recovery type)
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: "Mật khẩu của bạn đã được cập nhật thành công. Vui lòng đăng nhập lại.",
+      message: "Đổi mật khẩu thành công",
     });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";

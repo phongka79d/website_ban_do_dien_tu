@@ -3,18 +3,18 @@
 import React, { useState, useTransition, useEffect } from "react";
 import Link from "next/link";
 import { Mail, Lock, Eye, EyeOff, ArrowRight, ShieldCheck, CheckCircle2 } from "lucide-react";
-import { requestPasswordReset, updatePassword, resendRecoveryOtp, verifyRecoveryOtp } from "@/app/auth/actions";
+import { requestPasswordReset, resetPasswordWithOtp, resendRecoveryOtp } from "@/app/auth/actions";
 import AuthCard from "@/components/auth/AuthCard";
 import AuthInput from "@/components/auth/AuthInput";
 import OtpField from "@/components/auth/OtpField";
 import { Button, buttonVariants } from "@/components/ui/Button";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { 
-  forgotPasswordSchema, 
-  resetPasswordSchema, 
-  ForgotPasswordFormData, 
-  ResetPasswordFormData 
+import {
+  forgotPasswordSchema,
+  resetPasswordSchema,
+  ForgotPasswordFormData,
+  ResetPasswordFormData
 } from "@/lib/validations/auth";
 
 export default function ForgotPasswordPage() {
@@ -22,7 +22,6 @@ export default function ForgotPasswordPage() {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const [isOtpVerified, setIsOtpVerified] = useState(false);
 
   const [email, setEmail] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -58,26 +57,6 @@ export default function ForgotPasswordPage() {
     }
   }, [email, step2Form]);
 
-  // Tự động xác thực OTP khi đủ 6 ký tự
-  useEffect(() => {
-    if (watchedOtp.length === 6 && !isOtpVerified) {
-      const verify = async () => {
-        setError(null);
-        startTransition(async () => {
-          const result = await verifyRecoveryOtp(email, watchedOtp);
-          if (result?.error) {
-            setError(result.error);
-            step2Form.setError("otp", { message: result.error });
-          } else {
-            setIsOtpVerified(true);
-            setMessage("Xác thực thành công! Vui lòng nhập mật khẩu mới.");
-          }
-        });
-      };
-      verify();
-    }
-  }, [watchedOtp, isOtpVerified, email, step2Form]);
-
   useEffect(() => {
     if (step === 3) {
       const timer = setTimeout(() => (window.location.href = "/"), 3000);
@@ -104,11 +83,16 @@ export default function ForgotPasswordPage() {
   };
 
   const onStep2Submit = async (data: ResetPasswordFormData) => {
-    if (!isOtpVerified) return;
     setError(null);
 
+    const formData = new FormData();
+    formData.append("email", data.email);
+    formData.append("otp", data.otp);
+    formData.append("password", data.password);
+    formData.append("confirmPassword", data.confirmPassword);
+
     startTransition(async () => {
-      const result = await updatePassword(data.password);
+      const result = await resetPasswordWithOtp(formData);
       if (result?.error) {
         setError(result.error);
       } else {
@@ -193,63 +177,51 @@ export default function ForgotPasswordPage() {
               </div>
             )}
 
-            {!isOtpVerified ? (
-              <OtpField 
-                value={watchedOtp} 
-                onChange={(val) => {
-                  step2Form.setValue("otp", val, { shouldValidate: true });
-                }} 
-                onResend={handleResendOtp} 
-                initialCountdown={60}
-                error={step2Form.formState.errors.otp?.message}
-              />
-            ) : (
-              <div className="flex items-center justify-center gap-2 rounded-2xl bg-green-50 py-4 border border-green-100 animate-in zoom-in-95 duration-300">
-                <CheckCircle2 className="text-green-600" size={20} />
-                <span className="text-sm font-bold text-green-700">Mã xác thực đã được chấp nhận</span>
-              </div>
-            )}
+            <OtpField
+              value={watchedOtp}
+              onChange={(val) => step2Form.setValue("otp", val, { shouldValidate: true })}
+              onResend={handleResendOtp}
+              initialCountdown={60}
+              error={step2Form.formState.errors.otp?.message}
+            />
 
-            {isOtpVerified && (
-              <div className="space-y-5 animate-in slide-in-from-top-4 duration-500">
-                <AuthInput
-                  label="Mật khẩu mới"
-                  icon={<Lock size={18} />}
-                  rightSlot={
-                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="hover:text-primary transition-colors">
-                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </button>
-                  }
-                  {...step2Form.register("password")}
-                  error={step2Form.formState.errors.password?.message}
-                  type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
-                />
-                <AuthInput
-                  label="Xác nhận mật khẩu"
-                  icon={<Lock size={18} />}
-                  rightSlot={
-                    <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="hover:text-primary transition-colors">
-                      {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </button>
-                  }
-                  {...step2Form.register("confirmPassword")}
-                  error={step2Form.formState.errors.confirmPassword?.message}
-                  type={showConfirmPassword ? "text" : "password"}
-                  placeholder="••••••••"
-                />
+            <AuthInput
+              label="Mật khẩu mới"
+              icon={<Lock size={18} />}
+              rightSlot={
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="hover:text-primary transition-colors">
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              }
+              {...step2Form.register("password")}
+              error={step2Form.formState.errors.password?.message}
+              type={showPassword ? "text" : "password"}
+              placeholder="••••••••"
+            />
+            <AuthInput
+              label="Xác nhận mật khẩu"
+              icon={<Lock size={18} />}
+              rightSlot={
+                <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="hover:text-primary transition-colors">
+                  {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              }
+              {...step2Form.register("confirmPassword")}
+              error={step2Form.formState.errors.confirmPassword?.message}
+              type={showConfirmPassword ? "text" : "password"}
+              placeholder="••••••••"
+            />
 
-                <Button
-                  type="submit"
-                  variant="secondary"
-                  isLoading={isPending}
-                  fullWidth
-                  size="lg"
-                >
-                  Cập nhật mật khẩu mới
-                </Button>
-              </div>
-            )}
+            <Button
+              type="submit"
+              variant="secondary"
+              isLoading={isPending}
+              disabled={watchedOtp.length < 6}
+              fullWidth
+              size="lg"
+            >
+              Cập nhật mật khẩu mới
+            </Button>
 
             <Button
               type="button"
@@ -273,12 +245,12 @@ export default function ForgotPasswordPage() {
           </div>
           <h1 className="text-2xl font-black text-slate-900">Thành công!</h1>
           <p className="mt-4 text-sm font-medium text-slate-500 leading-relaxed px-2">
-            Mật khẩu của bạn đã được khôi phục. <br />
+            Đổi mật khẩu thành công <br />
             Đang chuyển hướng về trang chủ...
           </p>
           <div className="mt-8">
-            <Link 
-              href="/" 
+            <Link
+              href="/"
               className={buttonVariants({ variant: "primary", size: "lg" })}
             >
               Vào Trang Chủ Ngay

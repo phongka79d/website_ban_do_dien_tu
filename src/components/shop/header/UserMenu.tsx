@@ -2,29 +2,29 @@
 
 import React from "react";
 import Link from "next/link";
-import { User, LogOut, LayoutDashboard, Loader2, Heart, MapPin, Box, ShoppingCart, ChevronDown } from "lucide-react";
-import { usePathname, useRouter } from "next/navigation";
+import { User, LogOut, LayoutDashboard, Loader2, Heart, Box, ChevronDown } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { useTransition, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { User as SupabaseUser } from "@supabase/supabase-js";
+import { User as SupabaseUser, AuthError } from "@supabase/supabase-js";
 import { Avatar } from "@/components/common/Avatar";
 import { isAdmin, isStaff, getUserName, getUserAvatar } from "@/utils/auth-helpers";
 import { signOut } from "@/app/auth/actions";
 import { useCartStore } from "@/store/useCartStore";
 import { useWishlistStore } from "@/store/useWishlistStore";
 import { createClient } from "@/utils/supabase/client";
+import { Profile } from "@/types/database";
 
 export default function UserMenu() {
   const pathname = usePathname();
-  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [user, setUser] = React.useState<SupabaseUser | null>(null);
-  const [userProfile, setUserProfile] = React.useState<any>(null);
+  const [userProfile, setUserProfile] = React.useState<Partial<Profile> | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [isOpen, setIsOpen] = React.useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const { clearCart, fetchCart, getTotalItems } = useCartStore();
+  const { clearCart, fetchCart } = useCartStore();
   const { clearWishlist, fetchWishlist } = useWishlistStore();
 
   // Close menu on navigation or click outside
@@ -67,10 +67,10 @@ export default function UserMenu() {
           setTimeout(() => reject(new Error("Auth fetch timeout")), 4000)
         );
 
-        const { data: { user } } = await Promise.race([
+        const { data: { user } } = (await Promise.race([
           supabase.auth.getUser(),
           timeoutPromise
-        ]) as any;
+        ])) as { data: { user: SupabaseUser | null }; error: AuthError | null };
 
         if (!mounted) return;
         setUser(user);
@@ -92,13 +92,13 @@ export default function UserMenu() {
             try {
               const { data: profile, error } = await supabase
                 .from("profiles")
-                .select("role")
+                .select("role, full_name, avatar_url")
                 .eq("id", user.id)
                 .single();
               if (!error && profile && mounted) {
                 setUserProfile(profile); // Cập nhật lại nếu DB khác Metadata
               }
-            } catch (e: any) {
+            } catch (e: unknown) {
               console.warn("Background profile sync failed", e);
             }
           })();
@@ -138,13 +138,13 @@ export default function UserMenu() {
           try {
             const { data: profile, error } = await supabase
               .from("profiles")
-              .select("role")
+              .select("role, full_name, avatar_url")
               .eq("id", newUser.id)
               .single();
             if (!error && profile && mounted) {
               setUserProfile(profile);
             }
-          } catch (err: any) {
+          } catch (err: unknown) {
             console.warn("Background profile err:", err);
           }
         })();
@@ -194,14 +194,14 @@ export default function UserMenu() {
           className="flex items-center gap-2 rounded-xl px-2 py-1.5 transition-colors hover:bg-slate-100 md:px-3"
         >
           <Avatar
-            src={getUserAvatar(user)}
-            fallbackName={getUserName(user)}
+            src={userProfile?.avatar_url || getUserAvatar(user)}
+            fallbackName={userProfile?.full_name || getUserName(user)}
             size={28}
             className="ring-1 ring-primary/10 border-primary/20 shadow-sm md:size-24"
           />
           <div className="hidden flex-col items-start leading-tight md:flex">
             <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">Xin chào</span>
-            <span className="text-xs font-bold text-slate-800">{getUserName(user)}</span>
+            <span className="text-xs font-bold text-slate-800">{userProfile?.full_name || getUserName(user)}</span>
           </div>
           <ChevronDown
             size={14}

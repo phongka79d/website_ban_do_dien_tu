@@ -4,16 +4,13 @@ import React, { useState, useCallback } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { UserService } from "@/services/userService";
 import { Profile } from "@/types/database";
+import { SupabaseClient } from "@supabase/supabase-js";
 import { 
   User, 
   ShieldCheck, 
-  ShieldAlert, 
-  Search, 
-  MoreVertical,
   UserCheck,
   UserMinus,
   Shield,
-  Clock,
   Mail,
   Phone,
   Hash,
@@ -24,11 +21,9 @@ import ConfirmationModal from "@/components/common/ConfirmationModal";
 import NotificationModal from "@/components/common/NotificationModal";
 import AdminManagerShell from "./AdminManagerShell";
 import { Button } from "../ui/Button";
-import { Card } from "../ui/Card";
 import { useAdminSearch } from "@/hooks/useAdminSearch";
 import { Pagination } from "../ui/Pagination";
 import { formatDate } from "@/utils/format";
-import { CldImage } from "next-cloudinary";
 
 interface UserManagerProps {
   currentAdminId: string;
@@ -37,7 +32,7 @@ interface UserManagerProps {
 export default function UserManager({ currentAdminId }: UserManagerProps) {
   const [roleFilter, setRoleFilter] = useState("all");
   
-  const searchFn = useCallback((supabase: any, query: string, page: number, pageSize: number) => 
+  const searchFn = useCallback((supabase: SupabaseClient, query: string, page: number, pageSize: number) => 
     UserService.fetchUsers(supabase, page, pageSize, query, roleFilter), [roleFilter]);
 
   const {
@@ -83,7 +78,7 @@ export default function UserManager({ currentAdminId }: UserManagerProps) {
     }
 
     if (type === "role") {
-      setModalConfig({ type, user, newRole: user.role as any });
+      setModalConfig({ type, user, newRole: user.role as Profile["role"] });
     } else {
       setModalConfig({ type, user });
     }
@@ -105,7 +100,7 @@ export default function UserManager({ currentAdminId }: UserManagerProps) {
           result = await UserService.updateStatus(supabase, modalConfig.user.id, true, currentAdminId);
         } else if (modalConfig.type === "role") {
           const targetRole = modalConfig.newRole || modalConfig.user.role;
-          result = await UserService.updateRole(supabase, modalConfig.user.id, targetRole as any, currentAdminId);
+          result = await UserService.updateRole(supabase, modalConfig.user.id, targetRole as Profile["role"], currentAdminId);
         }
 
         if (result?.error) {
@@ -128,7 +123,7 @@ export default function UserManager({ currentAdminId }: UserManagerProps) {
           window.location.reload(); // Cách triệt để nhất để thấy trạng thái Mở khóa
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Critical Admin User Error:", err);
       setNotification({
         isOpen: true,
@@ -212,8 +207,11 @@ export default function UserManager({ currentAdminId }: UserManagerProps) {
                       <span className="px-2 py-0.5 rounded-lg bg-indigo-50 text-indigo-600 text-[9px] font-black uppercase tracking-tighter ring-1 ring-indigo-100 shrink-0">Bạn</span>
                     )}
                   </div>
-                  <p className="text-[11px] text-slate-400 font-mono flex items-center gap-1 truncate">
+                  <p className="text-[11px] text-slate-400 font-mono flex items-center gap-1 truncate mb-0.5">
                     <Hash size={10} /> {user.id.slice(0, 8)}...{user.id.slice(-4)}
+                  </p>
+                  <p className="md:hidden text-[11px] text-indigo-500 font-bold truncate">
+                    {user.email}
                   </p>
                 </div>
               </div>
@@ -253,6 +251,12 @@ export default function UserManager({ currentAdminId }: UserManagerProps) {
                   <div className={`w-1.5 h-1.5 rounded-full ${user.is_active ? "bg-emerald-500 animate-pulse" : "bg-rose-500"}`} />
                   {user.is_active ? "Hoạt động" : "Bị khóa"}
                 </div>
+
+                {!user.full_name && (
+                  <div className="bg-amber-50 text-amber-600 border-amber-100 border px-3 py-1.5 rounded-2xl text-[9px] font-black uppercase tracking-widest shrink-0 animate-bounce">
+                    Thiếu thông tin
+                  </div>
+                )}
               </div>
 
               {/* Meta Section (Desktop only) */}
@@ -342,7 +346,7 @@ export default function UserManager({ currentAdminId }: UserManagerProps) {
               title="Chọn Quyền Hạn"
               className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-700 font-bold outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all cursor-pointer appearance-none"
               value={modalConfig.newRole || "user"}
-              onChange={(e) => setModalConfig({ ...modalConfig, newRole: e.target.value as any })}
+              onChange={(e) => setModalConfig({ ...modalConfig, newRole: e.target.value as Profile["role"] })}
             >
               <option value="admin">👑 Quản trị viên (Admin)</option>
               <option value="staff">💼 Nhân viên (Staff)</option>
